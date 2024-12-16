@@ -51,30 +51,53 @@ func (s *Scanner) scanToken() {
 	case '!':
 		if s.match('=') {
 			s.addToken(BANG_EQUAL)
-		}else{
+		} else {
 			s.addToken(BANG)
 		}
-    case '=':
+	case '=':
 		if s.match('=') {
 			s.addToken(EQUAL_EQUAL)
-		}else{
+		} else {
 			s.addToken(EQUAL)
 		}
-    case '<':
+	case '<':
 		if s.match('=') {
 			s.addToken(LESS_EQUAL)
-		}else{
+		} else {
 			s.addToken(LESS)
 		}
-    case '>':
+	case '>':
 		if s.match('=') {
 			s.addToken(GREATER_EQUAL)
-		}else{
+		} else {
 			s.addToken(GREATER)
 		}
+	case '/':
+		if s.match('/') {
+			for s.peek() != '\n' && !s.isAtEnd() {
+				s.advance()
+			}
+		} else {
+			s.addToken(SLASH)
+		}
+	case ' ':
+		fallthrough
+	case '\r':
+		fallthrough
+	case '\t':
+		// ignore whitespace
+	case '\n':
+		s.line++
 	default:
-		error(s.line, "Unexpected character: " + string(c))
+		error(s.line, "Unexpected character: "+string(c))
 	}
+}
+
+func (s *Scanner) peek() byte {
+	if s.isAtEnd() {
+		return '\000'
+	}
+	return s.source[s.current]
 }
 
 func (s *Scanner) advance() byte {

@@ -31,6 +31,10 @@ func main() {
 	for _, token := range scanner.tokens {
 		fmt.Println(token.toString())
 	}
+
+	if hadError{
+		os.Exit(65)
+	}
 }
 
 func error(line int, message string) {

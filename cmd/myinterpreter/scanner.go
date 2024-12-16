@@ -73,7 +73,7 @@ func (s *Scanner) scanToken() {
 			s.addToken(GREATER)
 		}
 	default:
-		error(s.line, "Unexpected character.")
+		error(s.line, "Unexpected character: " + string(c))
 	}
 }
 

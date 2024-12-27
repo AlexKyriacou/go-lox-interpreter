@@ -1,5 +1,9 @@
 package main
 
+import (
+	"strconv"
+)
+
 type Scanner struct {
 	source string
 	tokens []Token
@@ -102,8 +106,44 @@ func (s *Scanner) scanToken() {
 	case '"':
 		s.string()
 	default:
-		error(s.line, "Unexpected character: "+string(c))
+		if s.isDigit(c) {
+			s.number()
+		} else {
+			error(s.line, "Unexpected character: "+string(c))
+		}
 	}
+}
+
+// isDigit will return a bool based on if a char is within 0-9
+// we need our own function as the unicode.IsDigit func
+// also includes Devangari digits and other stuff not required
+func (s *Scanner) isDigit(c byte) bool {
+	return c >= '0' && c <= '9'
+}
+
+// number will consume as many digits as found for the integer part of the literal
+// it will look for a decimal point that is followed by at least one digit
+// if a fractional part exists it will then consume any lettes found after
+func (s *Scanner) number() {
+	for s.isDigit(s.peek()) {
+		s.advance()
+	}
+
+	// look for a fractional part of the number
+	if s.peek() == '.' && s.isDigit(s.peekNext()) {
+		//consume the decimal point
+		s.advance()
+		for s.isDigit(s.peek()) {
+			s.advance()
+		}
+	}
+
+	value, err := strconv.ParseFloat(s.source[s.start:s.current], 64)
+	if err != nil {
+		error(s.line, "Invalid number.")
+		return
+	}
+	s.addTokenLiteral(NUMBER, value)
 }
 
 // string consumes characters until it reaches the " that ends the string.
@@ -111,7 +151,7 @@ func (s *Scanner) scanToken() {
 // closed and report the error
 func (s *Scanner) string() {
 	// consume the contents of the string
-	for s.peek() != '"' && !s.isAtEnd(){
+	for s.peek() != '"' && !s.isAtEnd() {
 		if s.peek() == '\n' {
 			s.line++
 		}
@@ -127,7 +167,7 @@ func (s *Scanner) string() {
 	s.advance()
 
 	// Trim off the surrounding quotes from the string value
-	var value string = s.source[s.start + 1: s.current - 1]
+	var value string = s.source[s.start+1 : s.current-1]
 	s.addTokenLiteral(STRING, value)
 }
 
@@ -138,6 +178,15 @@ func (s *Scanner) peek() byte {
 		return '\000'
 	}
 	return s.source[s.current]
+}
+
+// peekNext return the character 2 ahead without consuming it
+// will return null terminator if the Scanner is 2 away from the end of the source
+func (s *Scanner) peekNext() byte {
+	if s.current+1 >= len(s.source) {
+		return '\000'
+	}
+	return s.source[s.current+1]
 }
 
 // advance consumes the current character and returns it

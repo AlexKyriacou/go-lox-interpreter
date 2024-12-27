@@ -26,7 +26,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
 		os.Exit(1)
 	}
-	scanner := Scanner{string(fileContents), []Token{}, 0, 0, 1}
+	scanner := NewScanner(string(fileContents))
 	scanner.scanTokens()
 	for _, token := range scanner.tokens {
 		fmt.Println(token)

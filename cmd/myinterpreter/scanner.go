@@ -7,12 +7,44 @@ import (
 type Scanner struct {
 	source string
 	tokens []Token
+
 	// points to the first character in the lexeme being scanned
 	start int
+
 	// points to the character currently being considered
 	current int
+
 	// what source line currernt is on
 	line int
+
+	// map of all reesrved identifiers
+	keywords map[string]TokenType
+}
+
+// NewScanner creates a new Scanner with the provided source code
+// initializes the Scanner's properties including the reserved keywords
+// returning a pointer to the Scanner
+func NewScanner(source string) *Scanner {
+	s := &Scanner{source: source, tokens: []Token{}, start: 0, current: 0, line: 1}
+	s.keywords = map[string]TokenType{
+		"and":    AND,
+		"class":  CLASS,
+		"else":   ELSE,
+		"false":  FALSE,
+		"for":    FOR,
+		"fun":    FUN,
+		"if":     IF,
+		"nil":    NIL,
+		"or":     OR,
+		"print":  PRINT,
+		"return": RETURN,
+		"super":  SUPER,
+		"this":   THIS,
+		"true":   TRUE,
+		"var":    VAR,
+		"while":  WHILE,
+	}
+	return s
 }
 
 // scanTokens loops through the source code of the Scanner
@@ -108,10 +140,39 @@ func (s *Scanner) scanToken() {
 	default:
 		if s.isDigit(c) {
 			s.number()
+		} else if s.isAlpha(c) {
+			s.identifier()
 		} else {
 			error(s.line, "Unexpected character: "+string(c))
 		}
 	}
+}
+
+// identifier consumes all the characters within a valid identifier and adds the
+// token to the scanner checks against the scanner reserved words list
+func (s *Scanner) identifier() {
+	for s.isAlphaNumeric(s.peek()) {
+		s.advance()
+	}
+	text := s.source[s.start:s.current]
+	tokenType, isReserved := s.keywords[text]
+	if !isReserved {
+		tokenType = IDENTIFIER
+	}
+	s.addToken(tokenType)
+}
+
+// isAlphaNumber returns true if the character is a valid alpha character or
+// digit for a lox identifier
+func (s *Scanner) isAlphaNumeric(c byte) bool {
+	return s.isAlpha(c) || s.isDigit(c)
+}
+
+// return true if the character is a valid alpha character for a lox identifier
+func (s *Scanner) isAlpha(c byte) bool {
+	return (c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		c == '_'
 }
 
 // isDigit will return a bool based on if a char is within 0-9

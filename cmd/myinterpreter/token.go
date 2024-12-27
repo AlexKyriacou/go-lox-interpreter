@@ -9,7 +9,7 @@ type Token struct {
 	line      int
 }
 
-func (t Token) toString() string {
+func (t Token) String() string {
 	var literalStr string
 	if t.literal == nil {
 		literalStr = "null"

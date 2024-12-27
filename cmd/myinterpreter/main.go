@@ -29,18 +29,21 @@ func main() {
 	scanner := Scanner{string(fileContents), []Token{}, 0, 0, 1}
 	scanner.scanTokens()
 	for _, token := range scanner.tokens {
-		fmt.Println(token.toString())
+		fmt.Println(token)
 	}
 
-	if hadError{
+	if hadError {
 		os.Exit(65)
 	}
 }
 
+// error reports a provided error mesage at a given line number.
 func error(line int, message string) {
 	report(line, "", message)
 }
 
+// report reports an error message at a given line number
+// setting hadError to true.
 func report(line int, where string, message string) {
 	fmt.Fprintf(os.Stderr, "[line %d] Error%s: %s\n", line, where, message)
 	hadError = true

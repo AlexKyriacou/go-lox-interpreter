@@ -1,5 +1,7 @@
 package main
 
+//go:generate go run ./../tools/generateAst.go ./
+
 import (
 	"fmt"
 	"os"
@@ -15,31 +17,36 @@ func main() {
 
 	command := os.Args[1]
 
-	if command != "tokenize" {
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
-		os.Exit(1)
-	}
-
 	filename := os.Args[2]
 	fileContents, err := os.ReadFile(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
 		os.Exit(1)
 	}
+
 	scanner := NewScanner(string(fileContents))
-	scanner.scanTokens()
-	for _, token := range scanner.tokens {
-		fmt.Println(token)
-	}
+	tokens := scanner.scanTokens()
+	if command == "tokenize" {
+		for _, token := range tokens {
+			fmt.Println(token)
+		}
 
-	if hadError {
-		os.Exit(65)
-	}
-}
+		if hadError {
+			os.Exit(65)
+		}
+	} else if command == "parse" {
+		parser := NewParser(tokens)
+		expression := parser.parse()
 
-// error reports a provided error mesage at a given line number.
-func error(line int, message string) {
-	report(line, "", message)
+		if hadError {
+			os.Exit(65)
+		}
+		astPrinter := AstPrinter{}
+		fmt.Println(astPrinter.print(expression))
+	} else {
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
+		os.Exit(1)
+	}
 }
 
 // report reports an error message at a given line number

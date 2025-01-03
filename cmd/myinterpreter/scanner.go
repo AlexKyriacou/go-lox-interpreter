@@ -143,7 +143,7 @@ func (s *Scanner) scanToken() {
 		} else if s.isAlpha(c) {
 			s.identifier()
 		} else {
-			error(s.line, "Unexpected character: "+string(c))
+			report(s.line, "", "Unexpected character: "+string(c))
 		}
 	}
 }
@@ -201,7 +201,7 @@ func (s *Scanner) number() {
 
 	value, err := strconv.ParseFloat(s.source[s.start:s.current], 64)
 	if err != nil {
-		error(s.line, "Invalid number.")
+		report(s.line, "", "Invalid number.")
 		return
 	}
 	s.addTokenLiteral(NUMBER, value)
@@ -220,7 +220,7 @@ func (s *Scanner) string() {
 	}
 
 	if s.isAtEnd() {
-		error(s.line, "Unterminated string.")
+		report(s.line, "", "Unterminated string.")
 		return
 	}
 

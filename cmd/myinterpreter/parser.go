@@ -1,0 +1,191 @@
+package main
+
+type Parser struct {
+	tokens  []Token
+	current int
+}
+
+// parse is the entry point for the parser
+func (p *Parser) parse() Expr {
+	return p.expression()
+}
+
+// NewParser creates a new Parser with the provided tokens
+func NewParser(tokens []Token) *Parser {
+	return &Parser{tokens: tokens, current: 0}
+}
+
+// represents the expression rule of the grammar
+// expression -> equality
+func (p *Parser) expression() Expr {
+	return p.equality()
+}
+
+// represents the equality rule of the grammar
+// equality -> comparison ( ( "!=" | "==" ) comparison )*
+func (p *Parser) equality() Expr {
+	var expr Expr = p.comparison()
+
+	for p.match(BANG_EQUAL, EQUAL_EQUAL) {
+		operator := p.previous()
+		right := p.comparison()
+		expr = &Binary{expr, operator, right}
+	}
+	return expr
+}
+
+// represents the comparison rule of the grammar
+// comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )*
+func (p *Parser) comparison() Expr {
+	var expr Expr = p.term()
+
+	for p.match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL) {
+		operator := p.previous()
+		right := p.term()
+		expr = &Binary{expr, operator, right}
+	}
+	return expr
+}
+
+// represents the term rule of the grammar
+// term -> factor ( ( "-" | "+" ) factor )*
+func (p *Parser) term() Expr {
+	var expr Expr = p.factor()
+
+	for p.match(MINUS, PLUS) {
+		operator := p.previous()
+		right := p.factor()
+		expr = &Binary{expr, operator, right}
+	}
+	return expr
+}
+
+// represents the factor rule of the grammar
+// factor -> unary ( ( "/" | "*" ) unary )*
+func (p *Parser) factor() Expr {
+	var expr Expr = p.unary()
+
+	for p.match(SLASH, STAR) {
+		operator := p.previous()
+		right := p.unary()
+		expr = &Binary{expr, operator, right}
+	}
+	return expr
+}
+
+// represents the unary rule of the grammar
+// unary -> ( "!" | "-" ) unary | primary
+func (p *Parser) unary() Expr {
+	if p.match(BANG, MINUS) {
+		operator := p.previous()
+		right := p.unary()
+		return &Unary{operator: operator, right: right}
+	}
+	return p.primary()
+}
+
+// represents the primary rule of the grammar
+// primary -> NUMBER | STRING | "false" | "true" | "nil" | "(" expression ")"
+func (p *Parser) primary() Expr {
+	if p.match(FALSE) {
+		return &Literal{false}
+	} else if p.match(TRUE) {
+		return &Literal{true}
+	} else if p.match(NIL) {
+		return &Literal{nil}
+	} else if p.match(NUMBER, STRING) {
+		return &Literal{p.previous().literal}
+	} else if p.match(LEFT_PAREN) {
+		expr := p.expression()
+		p.consume(RIGHT_PAREN, "Expect ')' after expression.")
+		return &Grouping{expr}
+	}
+	p.error(p.peek(), "Expect expression.")
+	return nil
+}
+
+// consume consumes the current token if it is of the provided type
+// otherwise it will throw an error
+func (p *Parser) consume(tokenType TokenType, message string) Token {
+	if p.check(tokenType) {
+		return p.advance()
+	}
+	p.error(p.peek(), message)
+	return Token{}
+}
+
+// report prints an error message to the console
+func (p *Parser) error(token Token, message string) {
+	if token.tokenType == EOF {
+		report(token.line, " at end", message)
+	} else {
+		report(token.line, " at '"+token.lexeme+"'", message)
+	}
+}
+
+// synchonize will skip tokens until it finds a statement boundary
+func (p *Parser) synchonize() {
+	p.advance()
+
+	for !p.isAtEnd() {
+		if p.previous().tokenType == SEMICOLON {
+			return
+		}
+
+		switch p.peek().tokenType {
+		case CLASS, FUN, VAR, FOR, IF, WHILE, PRINT, RETURN:
+			return
+		}
+		p.advance()
+	}
+}
+
+type ParseError struct {
+	token   Token
+	message string
+}
+
+// match checks to see if the current token is one of the provided types
+// if it is, then it will consume the token and return true otherwise
+// the token will be left alone and will return false
+func (p *Parser) match(types ...TokenType) bool {
+	for _, tokenType := range types {
+		if p.check(tokenType) {
+			p.advance()
+			return true
+		}
+	}
+	return false
+}
+
+// advance consumes the current token and returns it
+func (p *Parser) advance() Token {
+	if !p.isAtEnd() {
+		p.current++
+	}
+	return p.previous()
+}
+
+// check returns true if the current token is of the provided type
+// this will never consume the token it only looks at it
+func (p *Parser) check(tokenType TokenType) bool {
+	if p.isAtEnd() {
+		return false
+	}
+	return p.peek().tokenType == tokenType
+}
+
+// checks if we have run out of tokens to parse
+func (p *Parser) isAtEnd() bool {
+	return p.peek().tokenType == EOF
+}
+
+// peek returns the current token
+func (p *Parser) peek() Token {
+	return p.tokens[p.current]
+}
+
+// previous returns the most recently consumed token
+func (p *Parser) previous() Token {
+	return p.tokens[p.current-1]
+}

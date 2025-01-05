@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Parser struct {
 	tokens  []Token
 	current int
@@ -7,7 +9,11 @@ type Parser struct {
 
 // parse is the entry point for the parser
 func (p *Parser) parse() Expr {
-	return p.expression()
+	expr, err := p.expression()
+	if err != nil {
+		return nil
+	}
+	return expr
 }
 
 // NewParser creates a new Parser with the provided tokens
@@ -17,110 +23,144 @@ func NewParser(tokens []Token) *Parser {
 
 // represents the expression rule of the grammar
 // expression -> equality
-func (p *Parser) expression() Expr {
+func (p *Parser) expression() (Expr, error) {
 	return p.equality()
 }
 
 // represents the equality rule of the grammar
 // equality -> comparison ( ( "!=" | "==" ) comparison )*
-func (p *Parser) equality() Expr {
-	var expr Expr = p.comparison()
+func (p *Parser) equality() (Expr, error) {
+	expr, err := p.comparison()
+	if err != nil {
+		return nil, err
+	}
 
 	for p.match(BANG_EQUAL, EQUAL_EQUAL) {
 		operator := p.previous()
-		right := p.comparison()
+		right, err := p.comparison()
+		if err != nil {
+			return nil, err
+		}
 		expr = &Binary{expr, operator, right}
 	}
-	return expr
+	return expr, nil
 }
 
 // represents the comparison rule of the grammar
 // comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )*
-func (p *Parser) comparison() Expr {
-	var expr Expr = p.term()
+func (p *Parser) comparison() (Expr, error) {
+	expr, err := p.term()
+	if err != nil {
+		return nil, err
+	}
 
 	for p.match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL) {
 		operator := p.previous()
-		right := p.term()
+		right, err := p.term()
+		if err != nil {
+			return nil, err
+		}
 		expr = &Binary{expr, operator, right}
 	}
-	return expr
+	return expr, nil
 }
 
 // represents the term rule of the grammar
 // term -> factor ( ( "-" | "+" ) factor )*
-func (p *Parser) term() Expr {
-	var expr Expr = p.factor()
+func (p *Parser) term() (Expr, error) {
+	expr, err := p.factor()
+	if err != nil {
+		return nil, err
+	}
 
 	for p.match(MINUS, PLUS) {
 		operator := p.previous()
-		right := p.factor()
+		right, err := p.factor()
+		if err != nil {
+			return nil, err
+		}
 		expr = &Binary{expr, operator, right}
 	}
-	return expr
+	return expr, nil
 }
 
 // represents the factor rule of the grammar
 // factor -> unary ( ( "/" | "*" ) unary )*
-func (p *Parser) factor() Expr {
-	var expr Expr = p.unary()
+func (p *Parser) factor() (Expr, error) {
+	expr, err := p.unary()
+	if err != nil {
+		return nil, err
+	}
 
 	for p.match(SLASH, STAR) {
 		operator := p.previous()
-		right := p.unary()
+		right, err := p.unary()
+		if err != nil {
+			return nil, err
+		}
 		expr = &Binary{expr, operator, right}
 	}
-	return expr
+	return expr, nil
 }
 
 // represents the unary rule of the grammar
 // unary -> ( "!" | "-" ) unary | primary
-func (p *Parser) unary() Expr {
+func (p *Parser) unary() (Expr, error) {
 	if p.match(BANG, MINUS) {
 		operator := p.previous()
-		right := p.unary()
-		return &Unary{operator: operator, right: right}
+		right, err := p.unary()
+		if err != nil {
+			return nil, err
+		}
+		return &Unary{operator: operator, right: right}, nil
 	}
 	return p.primary()
 }
 
 // represents the primary rule of the grammar
 // primary -> NUMBER | STRING | "false" | "true" | "nil" | "(" expression ")"
-func (p *Parser) primary() Expr {
+func (p *Parser) primary() (Expr, error) {
 	if p.match(FALSE) {
-		return &Literal{false}
+		return &Literal{false}, nil
 	} else if p.match(TRUE) {
-		return &Literal{true}
+		return &Literal{true}, nil
 	} else if p.match(NIL) {
-		return &Literal{nil}
+		return &Literal{nil}, nil
 	} else if p.match(NUMBER, STRING) {
-		return &Literal{p.previous().literal}
+		return &Literal{p.previous().literal}, nil
 	} else if p.match(LEFT_PAREN) {
-		expr := p.expression()
-		p.consume(RIGHT_PAREN, "Expect ')' after expression.")
-		return &Grouping{expr}
+		expr, err := p.expression()
+		if err != nil {
+			return nil, err
+		}
+		_, err = p.consume(RIGHT_PAREN, "Expect ')' after expression.")
+		if err != nil {
+			return nil, err
+		}
+		return &Grouping{expr}, nil
 	}
 	p.error(p.peek(), "Expect expression.")
-	return nil
+	return nil, nil
 }
 
 // consume consumes the current token if it is of the provided type
 // otherwise it will throw an error
-func (p *Parser) consume(tokenType TokenType, message string) Token {
+func (p *Parser) consume(tokenType TokenType, message string) (Token, error) {
 	if p.check(tokenType) {
-		return p.advance()
+		return p.advance(), nil
 	}
-	p.error(p.peek(), message)
-	return Token{}
+	err := p.error(p.peek(), message)
+	return Token{}, err
 }
 
 // report prints an error message to the console
-func (p *Parser) error(token Token, message string) {
+func (p *Parser) error(token Token, message string) ParseError {
 	if token.tokenType == EOF {
 		report(token.line, " at end", message)
 	} else {
 		report(token.line, " at '"+token.lexeme+"'", message)
 	}
+	return ParseError{token, message}
 }
 
 // synchonize will skip tokens until it finds a statement boundary
@@ -140,9 +180,15 @@ func (p *Parser) synchonize() {
 	}
 }
 
+// ParseError represents an error that occurred during parsing
 type ParseError struct {
 	token   Token
 	message string
+}
+
+// Error returns a formatted error message
+func (e ParseError) Error() string {
+	return fmt.Sprintf("[line %d] Error%s: %s", e.token.line, e.token.lexeme, e.message)
 }
 
 // match checks to see if the current token is one of the provided types

@@ -35,7 +35,7 @@ func defineAst(outputDir string, baseName string, types []string) error {
 	file.WriteString("package main\n")
 	file.WriteString("\n")
 	file.WriteString("type " + baseName + " interface {\n")
-	file.WriteString("\tAccept(visitor Visitor) interface{}\n")
+	file.WriteString("\tAccept(visitor Visitor) (interface{}, error)\n")
 	file.WriteString("}\n")
 
 	defineVisitor(file, baseName, types)
@@ -55,7 +55,7 @@ func defineVisitor(file *os.File, baseName string, types []string) {
 
 	for _, astType := range types {
 		typeName := strings.TrimSpace(strings.Split(astType, ":")[0])
-		file.WriteString("\tVisit" + typeName + baseName + "(" + strings.ToLower(baseName) + " *" + typeName + ") interface{}\n")
+		file.WriteString("\tVisit" + typeName + baseName + "(" + strings.ToLower(baseName) + " *" + typeName + ") (interface{}, error)\n")
 	}
 
 	file.WriteString("}\n")
@@ -73,7 +73,7 @@ func defineType(file *os.File, typeName, baseName, fieldList string) {
 	}
 	file.WriteString("}\n")
 
-	file.WriteString("\nfunc (" + strings.ToLower(string(typeName[0])) + " *" + typeName + ") Accept(visitor Visitor) interface{} {\n")
+	file.WriteString("\nfunc (" + strings.ToLower(string(typeName[0])) + " *" + typeName + ") Accept(visitor Visitor) (interface{}, error) {\n")
 	file.WriteString("\t return visitor.Visit" + typeName + baseName + "(" + strings.ToLower(string(typeName[0])) + ")\n")
 	file.WriteString("}\n")
 }

@@ -34,33 +34,6 @@ func (i *Interpreter) VisitUnaryExpr(expr *Unary) (interface{}, error) {
 	return nil, nil
 }
 
-func (i *Interpreter) checkNumberOperand(operator Token, operand interface{}) error {
-	if _, ok := operand.(float64); ok {
-		return nil
-	}
-	return &RuntimeError{operator, "Operand must be a number,"}
-}
-
-func (i *Interpreter) checkNumberOperands(operator Token, left interface{}, right interface{}) error {
-	if _, ok := left.(float64); ok{
-		if _, ok := right.(float64); ok{
-			return nil 
-		}
-	}
-	return &RuntimeError{operator, "Operands must be numbers."}
-}
-
-// IsTruthy will return true if the value is not nil or false
-func (i *Interpreter) IsTruthy(value interface{}) bool {
-	switch value := value.(type) {
-	case nil:
-		return false
-	case bool:
-		return value
-	}
-	return true
-}
-
 // VisitBinaryExpr will evaluate the binary expression
 func (i *Interpreter) VisitBinaryExpr(expr *Binary) (interface{}, error) {
 	left, err := i.evaluate(expr.left)
@@ -78,13 +51,13 @@ func (i *Interpreter) VisitBinaryExpr(expr *Binary) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		return left.(float64) - right.(float64), nil 
+		return left.(float64) - right.(float64), nil
 	case SLASH:
 		err := i.checkNumberOperands(expr.operator, left, right)
 		if err != nil {
 			return nil, err
 		}
-		return left.(float64) / right.(float64), nil 
+		return left.(float64) / right.(float64), nil
 	case STAR:
 		err := i.checkNumberOperands(expr.operator, left, right)
 		if err != nil {
@@ -102,7 +75,7 @@ func (i *Interpreter) VisitBinaryExpr(expr *Binary) (interface{}, error) {
 				return l + r, nil
 			}
 		}
-		return nil, &RuntimeError{expr.operator, "Operands must be two numbers or two strings."} 
+		return nil, &RuntimeError{expr.operator, "Operands must be two numbers or two strings."}
 	case GREATER:
 		err := i.checkNumberOperands(expr.operator, left, right)
 		if err != nil {
@@ -134,6 +107,33 @@ func (i *Interpreter) VisitBinaryExpr(expr *Binary) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+func (i *Interpreter) checkNumberOperand(operator Token, operand interface{}) error {
+	if _, ok := operand.(float64); ok {
+		return nil
+	}
+	return &RuntimeError{operator, "Operand must be a number,"}
+}
+
+func (i *Interpreter) checkNumberOperands(operator Token, left interface{}, right interface{}) error {
+	if _, ok := left.(float64); ok {
+		if _, ok := right.(float64); ok {
+			return nil
+		}
+	}
+	return &RuntimeError{operator, "Operands must be numbers."}
+}
+
+// IsTruthy will return true if the value is not nil or false
+func (i *Interpreter) IsTruthy(value interface{}) bool {
+	switch value := value.(type) {
+	case nil:
+		return false
+	case bool:
+		return value
+	}
+	return true
 }
 
 // isEqual will compare two values and return true if they are equal

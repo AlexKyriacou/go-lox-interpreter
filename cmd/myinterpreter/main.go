@@ -8,6 +8,7 @@ import (
 )
 
 var hadError bool = false
+var hadRuntimeError bool = false
 
 func main() {
 	if len(os.Args) < 3 {
@@ -26,6 +27,8 @@ func main() {
 
 	scanner := NewScanner(string(fileContents))
 	tokens := scanner.scanTokens()
+	parser := NewParser(tokens)
+	interpreter := Interpreter{}
 	if command == "tokenize" {
 		for _, token := range tokens {
 			fmt.Println(token)
@@ -35,14 +38,18 @@ func main() {
 			os.Exit(65)
 		}
 	} else if command == "parse" {
-		parser := NewParser(tokens)
 		expression := parser.parse()
-
 		if hadError {
 			os.Exit(65)
 		}
 		astPrinter := AstPrinter{}
 		fmt.Println(astPrinter.print(expression))
+	} else if command == "evaluate" {
+		expression := parser.parse()
+		interpreter.interpret(expression)
+		if hadRuntimeError {
+			os.Exit(70)
+		}
 	} else {
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
@@ -54,4 +61,9 @@ func main() {
 func report(line int, where string, message string) {
 	fmt.Fprintf(os.Stderr, "[line %d] Error%s: %s\n", line, where, message)
 	hadError = true
+}
+
+func reportRuntimeError(runtimeError RuntimeError) {
+	fmt.Fprintf(os.Stderr, "%s\n[line %d]\n", runtimeError.message, runtimeError.token.line)
+	hadRuntimeError = true
 }

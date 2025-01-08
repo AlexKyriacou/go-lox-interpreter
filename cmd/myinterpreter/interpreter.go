@@ -1,5 +1,11 @@
 package main
 
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
 type Interpreter struct{}
 
 // VisitLiteralExpression will evaluate the literal expression
@@ -146,4 +152,28 @@ func (i *Interpreter) isEqual(a interface{}, b interface{}) bool {
 // Evaluate will evaluate the expression
 func (i *Interpreter) evaluate(expr Expr) (interface{}, error) {
 	return expr.Accept(i)
+}
+
+func (i *Interpreter) interpret(expression Expr) {
+	value, err := i.evaluate(expression)
+	if errors.Is(err, &RuntimeError{}){
+		reportRuntimeError(*(err.(*RuntimeError)))
+		return
+	}
+	fmt.Println(i.stringify(value))
+}
+
+func (i *Interpreter) stringify(object interface{}) string{
+	if object == nil{
+		return "nil"
+	}
+
+	if _, ok := object.(float64); ok {
+		text := fmt.Sprintf("%v", object)
+		if strings.HasSuffix(text, ".0"){
+			text = text[0:]
+		}
+		return text
+	}
+	return fmt.Sprintf("%v", object)
 }

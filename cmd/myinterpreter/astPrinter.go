@@ -37,6 +37,10 @@ func (p *AstPrinter) VisitUnaryExpr(expr *Unary) (interface{}, error) {
 	return p.parenthesize(expr.operator.lexeme, expr.right)
 }
 
+func (p *AstPrinter) VisitVariableExpr(expr *Variable) (interface{}, error) {
+	return expr.name.lexeme, nil
+}
+
 func (p *AstPrinter) parenthesize(name string, exprs ...Expr) (interface{}, error) {
 	var sb strings.Builder
 	sb.WriteString("(")

@@ -18,6 +18,7 @@ func main() {
 		"Grouping : Expr expression",
 		"Literal : interface{} value",
 		"Unary : Token operator, Expr right",
+		"Variable : Token name",
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -26,6 +27,7 @@ func main() {
 	err = defineAst(outputDir, "Stmt", []string{
 		"Expression : Expr expression",
 		"Print      : Expr expression",
+		"Var        : Token name, Expr initializer",
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

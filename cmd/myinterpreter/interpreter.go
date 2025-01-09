@@ -6,7 +6,13 @@ import (
 	"strings"
 )
 
-type Interpreter struct{}
+type Interpreter struct {
+	environment Envionment
+}
+
+func NewInterpreter() Interpreter {
+	return Interpreter{Envionment{make(map[string]interface{})}}
+}
 
 // VisitLiteralExpression will evaluate the literal expression
 // which is just the value of the literal
@@ -154,6 +160,24 @@ func (i *Interpreter) evaluate(expr Expr) (interface{}, error) {
 	return expr.Accept(i)
 }
 
+func (i *Interpreter) VisitVarStmt(stmt *Var) error {
+	var value interface{}
+	var err error
+	if stmt.initializer != nil {
+		value, err = i.evaluate(stmt.initializer)
+		if err != nil {
+			return err
+		}
+	}
+
+	i.environment.define(stmt.name.lexeme, value)
+	return nil
+}
+
+func (i *Interpreter) VisitVariableExpr(expr *Variable) (interface{}, error) {
+	return i.environment.get(expr.name)
+}
+
 func (i *Interpreter) VisitExpressionStmt(stmt *Expression) error {
 	_, err := i.evaluate(stmt.expression)
 	return err
@@ -181,7 +205,7 @@ func (i *Interpreter) interpret(statements []Stmt) {
 }
 
 func (i *Interpreter) execute(statement Stmt) error {
-	return statement.Accept(i)	
+	return statement.Accept(i)
 }
 
 func (i *Interpreter) stringify(object interface{}) string {

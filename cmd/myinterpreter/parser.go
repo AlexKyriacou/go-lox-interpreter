@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Parser struct {
 	tokens  []Token
@@ -11,10 +13,44 @@ type Parser struct {
 func (p *Parser) parse() []Stmt {
 	var statements []Stmt
 	for !p.isAtEnd() {
-		stmt, _ := p.statement()
-		statements = append(statements, stmt)
+		declaration := p.declaration()
+		statements = append(statements, declaration)
 	}
 	return statements
+}
+
+func (p *Parser) declaration() Stmt {
+	if p.match(VAR) {
+		stmt, err := p.varDeclaration()
+		if err != nil {
+			p.synchonize()
+			return nil
+		}
+		return stmt
+	}
+	stmt, err := p.statement()
+	if err != nil {
+		p.synchonize()
+		return nil
+	}
+	return stmt
+}
+
+func (p *Parser) varDeclaration() (Stmt, error) {
+	name, err := p.consume(IDENTIFIER, "Expect variable name.")
+	if err != nil {
+		return nil, err
+	}
+	var initializer Expr
+	if p.match(EQUAL) {
+		initializer, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	p.consume(SEMICOLON, "Expect ';' after variable declaration")
+	return &Var{name, initializer}, nil
 }
 
 func (p *Parser) statement() (Stmt, error) {
@@ -154,6 +190,8 @@ func (p *Parser) primary() (Expr, error) {
 		return &Literal{nil}, nil
 	} else if p.match(NUMBER, STRING) {
 		return &Literal{p.previous().literal}, nil
+	} else if p.match(IDENTIFIER) {
+		return &Variable{p.previous()}, nil
 	} else if p.match(LEFT_PAREN) {
 		expr, err := p.expression()
 		if err != nil {

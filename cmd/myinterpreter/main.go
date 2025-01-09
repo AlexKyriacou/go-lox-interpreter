@@ -28,7 +28,7 @@ func main() {
 	scanner := NewScanner(string(fileContents))
 	tokens := scanner.scanTokens()
 	parser := NewParser(tokens)
-	interpreter := Interpreter{}
+	interpreter := NewInterpreter()
 	if command == "tokenize" {
 		for _, token := range tokens {
 			fmt.Println(token)

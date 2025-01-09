@@ -195,9 +195,8 @@ func (i *Interpreter) interpret(statements []Stmt) {
 	for _, statement := range statements {
 		err := i.execute(statement)
 		if err != nil {
-			if runtimeErr, ok := err.(*RuntimeError); ok {
-				reportRuntimeError(*runtimeErr)
-			} 
+			reportRuntimeError(*(err.(*RuntimeError)))
+			return
 		}
 	}
 }

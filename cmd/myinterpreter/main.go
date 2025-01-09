@@ -37,7 +37,7 @@ func main() {
 		if hadError {
 			os.Exit(65)
 		}
-	} else if command == "run" || command == "evaluate" {
+	} else if command == "run"{
 		statements := parser.parse()
 		if hadError {
 			os.Exit(65)
@@ -46,6 +46,23 @@ func main() {
 		if hadRuntimeError {
 			os.Exit(70)
 		}
+	} else if command == "parse" {
+		expression, _ := parser.expression()
+		if hadError {
+			os.Exit(65)
+		}
+		astPrinter := AstPrinter{}
+		fmt.Println(astPrinter.print(expression))
+	} else if command == "evaluate" {
+		expr, _ := parser.expression()
+		value, err := interpreter.evaluate(expr)
+		if err != nil {
+			reportRuntimeError(*(err.(*RuntimeError)))
+		}
+		if hadRuntimeError {
+			os.Exit(70)
+		}
+		fmt.Println(interpreter.stringify(value))
 	} else {
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)

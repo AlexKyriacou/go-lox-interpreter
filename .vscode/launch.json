@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${fileDirname}",
-            "args": ["evaluate", "${fileDirname}\\input.txt"]
+            "args": ["run", "${fileDirname}\\input.txt"]
         }
     ]
 }

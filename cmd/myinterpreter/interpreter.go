@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -196,10 +195,9 @@ func (i *Interpreter) interpret(statements []Stmt) {
 	for _, statement := range statements {
 		err := i.execute(statement)
 		if err != nil {
-			var runtimeErr *RuntimeError
-			if errors.As(err, &runtimeErr) {
+			if runtimeErr, ok := err.(*RuntimeError); ok {
 				reportRuntimeError(*runtimeErr)
-			}
+			} 
 		}
 	}
 }

@@ -203,8 +203,8 @@ func (p *Parser) primary() (Expr, error) {
 		}
 		return &Grouping{expr}, nil
 	}
-	p.error(p.peek(), "Expect expression.")
-	return nil, nil
+	err := p.error(p.peek(), "Expect expression.")
+	return nil, err
 }
 
 // consume consumes the current token if it is of the provided type

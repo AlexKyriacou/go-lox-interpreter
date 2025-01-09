@@ -37,8 +37,11 @@ func main() {
 		if hadError {
 			os.Exit(65)
 		}
-	} else if command == "run" {
+	} else if command == "run" || command == "evaluate" {
 		statements := parser.parse()
+		if hadError {
+			os.Exit(65)
+		}
 		interpreter.interpret(statements)
 		if hadRuntimeError {
 			os.Exit(70)

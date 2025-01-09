@@ -8,12 +8,38 @@ type Parser struct {
 }
 
 // parse is the entry point for the parser
-func (p *Parser) parse() Expr {
-	expr, err := p.expression()
-	if err != nil {
-		return nil
+func (p *Parser) parse() []Stmt {
+	var statements []Stmt
+	for !p.isAtEnd() {
+		stmt, _ := p.statement()
+		statements = append(statements, stmt)
 	}
-	return expr
+	return statements
+}
+
+func (p *Parser) statement() (Stmt, error) {
+	if p.match(PRINT) {
+		return p.printStatement()
+	}
+	return p.expressionStatement()
+}
+
+func (p *Parser) expressionStatement() (Stmt, error) {
+	value, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	p.consume(SEMICOLON, "Expect ';' after expression.")
+	return &Expression{value}, nil
+}
+
+func (p *Parser) printStatement() (Stmt, error) {
+	value, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	p.consume(SEMICOLON, "Expect ';' after value.")
+	return &Print{value}, nil
 }
 
 // NewParser creates a new Parser with the provided tokens

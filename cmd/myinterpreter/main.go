@@ -37,16 +37,9 @@ func main() {
 		if hadError {
 			os.Exit(65)
 		}
-	} else if command == "parse" {
-		expression := parser.parse()
-		if hadError {
-			os.Exit(65)
-		}
-		astPrinter := AstPrinter{}
-		fmt.Println(astPrinter.print(expression))
-	} else if command == "evaluate" {
-		expression := parser.parse()
-		interpreter.interpret(expression)
+	} else if command == "run" {
+		statements := parser.parse()
+		interpreter.interpret(statements)
 		if hadRuntimeError {
 			os.Exit(70)
 		}

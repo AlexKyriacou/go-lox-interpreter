@@ -154,23 +154,44 @@ func (i *Interpreter) evaluate(expr Expr) (interface{}, error) {
 	return expr.Accept(i)
 }
 
-func (i *Interpreter) interpret(expression Expr) {
-	value, err := i.evaluate(expression)
-	if errors.Is(err, &RuntimeError{}){
-		reportRuntimeError(*(err.(*RuntimeError)))
-		return
-	}
-	fmt.Println(i.stringify(value))
+func (i *Interpreter) VisitExpressionStmt(stmt *Expression) error {
+	_, err := i.evaluate(stmt.expression)
+	return err
 }
 
-func (i *Interpreter) stringify(object interface{}) string{
-	if object == nil{
+func (i *Interpreter) VisitPrintStmt(stmt *Print) error {
+	value, err := i.evaluate(stmt.expression)
+	if err != nil {
+		return err
+	}
+	fmt.Println(i.stringify(value))
+	return nil
+}
+
+func (i *Interpreter) interpret(statements []Stmt) {
+	for _, statement := range statements {
+		err := i.execute(statement)
+		if err != nil {
+			var runtimeErr *RuntimeError
+			if errors.As(err, &runtimeErr) {
+				reportRuntimeError(*runtimeErr)
+			}
+		}
+	}
+}
+
+func (i *Interpreter) execute(statement Stmt) error {
+	return statement.Accept(i)	
+}
+
+func (i *Interpreter) stringify(object interface{}) string {
+	if object == nil {
 		return "nil"
 	}
 
 	if _, ok := object.(float64); ok {
 		text := fmt.Sprintf("%v", object)
-		if strings.HasSuffix(text, ".0"){
+		if strings.HasSuffix(text, ".0") {
 			text = text[0:]
 		}
 		return text

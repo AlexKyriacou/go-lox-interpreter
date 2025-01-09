@@ -23,6 +23,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+	err = defineAst(outputDir, "Stmt", []string{
+		"Expression : Expr expression",
+		"Print      : Expr expression",
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func defineAst(outputDir string, baseName string, types []string) error {
@@ -35,7 +43,7 @@ func defineAst(outputDir string, baseName string, types []string) error {
 	file.WriteString("package main\n")
 	file.WriteString("\n")
 	file.WriteString("type " + baseName + " interface {\n")
-	file.WriteString("\tAccept(visitor Visitor) (interface{}, error)\n")
+	file.WriteString("\tAccept(visitor " + baseName + "Visitor) (interface{}, error)\n")
 	file.WriteString("}\n")
 
 	defineVisitor(file, baseName, types)
@@ -51,7 +59,7 @@ func defineAst(outputDir string, baseName string, types []string) error {
 
 func defineVisitor(file *os.File, baseName string, types []string) {
 	file.WriteString("\n")
-	file.WriteString("type Visitor interface {\n")
+	file.WriteString("type " + baseName + "Visitor interface {\n")
 
 	for _, astType := range types {
 		typeName := strings.TrimSpace(strings.Split(astType, ":")[0])
@@ -73,7 +81,7 @@ func defineType(file *os.File, typeName, baseName, fieldList string) {
 	}
 	file.WriteString("}\n")
 
-	file.WriteString("\nfunc (" + strings.ToLower(string(typeName[0])) + " *" + typeName + ") Accept(visitor Visitor) (interface{}, error) {\n")
+	file.WriteString("\nfunc (" + strings.ToLower(string(typeName[0])) + " *" + typeName + ") Accept(visitor " + baseName + "Visitor) (interface{}, error) {\n")
 	file.WriteString("\t return visitor.Visit" + typeName + baseName + "(" + strings.ToLower(string(typeName[0])) + ")\n")
 	file.WriteString("}\n")
 }

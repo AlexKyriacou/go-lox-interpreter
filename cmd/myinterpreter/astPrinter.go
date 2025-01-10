@@ -41,6 +41,10 @@ func (p *AstPrinter) VisitVariableExpr(expr *Variable) (interface{}, error) {
 	return expr.name.lexeme, nil
 }
 
+func (p *AstPrinter) VisitAssignExpr(expr *Assign) (interface{}, error) {
+	return p.parenthesize(expr.name.lexeme+" = ", expr.value)
+}
+
 func (p *AstPrinter) parenthesize(name string, exprs ...Expr) (interface{}, error) {
 	var sb strings.Builder
 	sb.WriteString("(")

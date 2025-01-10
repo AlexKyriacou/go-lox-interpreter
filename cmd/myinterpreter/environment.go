@@ -9,10 +9,19 @@ func (e *Envionment) define(name string, value interface{}) {
 }
 
 func (e *Envionment) get(name Token) (interface{}, error) {
-	val, exists := e.values[name.lexeme]
+	value, exists := e.values[name.lexeme]
 	if exists {
-		return val, nil
+		return value, nil
 	}
 
 	return nil, &RuntimeError{name, "Undefined variable '" + name.lexeme + "'."}
+}
+
+func (e *Envionment) assign(name Token, value interface{}) error {
+	_, exists := e.values[name.lexeme]
+	if exists {
+		e.values[name.lexeme] = value
+		return nil
+	}
+	return &RuntimeError{name, "Undefined variable '" + name.lexeme + "'."}
 }

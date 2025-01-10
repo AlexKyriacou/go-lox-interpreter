@@ -37,7 +37,7 @@ func main() {
 		if hadError {
 			os.Exit(65)
 		}
-	} else if command == "run"{
+	} else if command == "run" {
 		statements := parser.parse()
 		if hadError {
 			os.Exit(65)

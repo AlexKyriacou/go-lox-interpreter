@@ -173,6 +173,18 @@ func (i *Interpreter) VisitVarStmt(stmt *Var) error {
 	return nil
 }
 
+func (i *Interpreter) VisitAssignExpr(expr *Assign) (interface{}, error) {
+	value, err := i.evaluate(expr.value)
+	if err != nil {
+		return nil, err
+	}
+	err = i.environment.assign(expr.name, value)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
 func (i *Interpreter) VisitVariableExpr(expr *Variable) (interface{}, error) {
 	return i.environment.get(expr.name)
 }

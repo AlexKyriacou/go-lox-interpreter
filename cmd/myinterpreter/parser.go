@@ -69,6 +69,31 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 	return &Expression{value}, nil
 }
 
+// represents the assignment rule of the grammar
+// assignment -> IDENTIFIER "=" assignment | equality ;
+func (p *Parser) assignment() (Expr, error) {
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.match(EQUAL) {
+		equals := p.previous()
+		value, err := p.assignment()
+		if err != nil {
+			return nil, err
+		}
+		variable, ok := expr.(*Variable)
+		if ok {
+			name := variable.name
+			return &Assign{name, value}, nil
+		}
+
+		p.error(equals, "Invalid assignment target.")
+	}
+	return expr, nil
+}
+
 func (p *Parser) printStatement() (Stmt, error) {
 	value, err := p.expression()
 	if err != nil {
@@ -84,9 +109,9 @@ func NewParser(tokens []Token) *Parser {
 }
 
 // represents the expression rule of the grammar
-// expression -> equality
+// expression -> assignment
 func (p *Parser) expression() (Expr, error) {
-	return p.equality()
+	return p.assignment()
 }
 
 // represents the equality rule of the grammar

@@ -13,7 +13,8 @@ func main() {
 	}
 
 	outputDir := os.Args[1]
-	err := defineAst(outputDir, "Expr", []string{
+	err := defineAst(outputDir, "Expr", "(interface{}, error)", []string{
+		"Assign : Token name, Expr value",
 		"Binary : Expr left, Token operator, Expr right",
 		"Grouping : Expr expression",
 		"Literal : interface{} value",
@@ -24,7 +25,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
-	err = defineAst(outputDir, "Stmt", []string{
+	err = defineAst(outputDir, "Stmt", "error", []string{
 		"Expression : Expr expression",
 		"Print      : Expr expression",
 		"Var        : Token name, Expr initializer",
@@ -35,7 +36,7 @@ func main() {
 	}
 }
 
-func defineAst(outputDir string, baseName string, types []string) error {
+func defineAst(outputDir string, baseName string, returnType string, types []string) error {
 	path := outputDir + "/" + strings.ToLower(baseName) + ".go"
 	file, err := os.Create(path)
 	if err != nil {
@@ -45,33 +46,33 @@ func defineAst(outputDir string, baseName string, types []string) error {
 	file.WriteString("package main\n")
 	file.WriteString("\n")
 	file.WriteString("type " + baseName + " interface {\n")
-	file.WriteString("\tAccept(visitor " + baseName + "Visitor) (interface{}, error)\n")
+	file.WriteString("\tAccept(visitor " + baseName + "Visitor) " + returnType + "\n")
 	file.WriteString("}\n")
 
-	defineVisitor(file, baseName, types)
+	defineVisitor(file, baseName, returnType, types)
 
 	for _, astType := range types {
 		typeName := strings.TrimSpace(strings.Split(astType, ":")[0])
 		fields := strings.TrimSpace(strings.Split(astType, ":")[1])
-		defineType(file, typeName, baseName, fields)
+		defineType(file, typeName, baseName, returnType, fields)
 	}
 
 	return nil
 }
 
-func defineVisitor(file *os.File, baseName string, types []string) {
+func defineVisitor(file *os.File, baseName string, returnType string, types []string) {
 	file.WriteString("\n")
 	file.WriteString("type " + baseName + "Visitor interface {\n")
 
 	for _, astType := range types {
 		typeName := strings.TrimSpace(strings.Split(astType, ":")[0])
-		file.WriteString("\tVisit" + typeName + baseName + "(" + strings.ToLower(baseName) + " *" + typeName + ") (interface{}, error)\n")
+		file.WriteString("\tVisit" + typeName + baseName + "(" + strings.ToLower(baseName) + " *" + typeName + ") " + returnType + "\n")
 	}
 
 	file.WriteString("}\n")
 }
 
-func defineType(file *os.File, typeName, baseName, fieldList string) {
+func defineType(file *os.File, typeName, baseName, returnType, fieldList string) {
 	file.WriteString("\n")
 	file.WriteString("type " + typeName + " struct {\n")
 	fields := strings.Split(fieldList, ", ")
@@ -83,7 +84,7 @@ func defineType(file *os.File, typeName, baseName, fieldList string) {
 	}
 	file.WriteString("}\n")
 
-	file.WriteString("\nfunc (" + strings.ToLower(string(typeName[0])) + " *" + typeName + ") Accept(visitor " + baseName + "Visitor) (interface{}, error) {\n")
+	file.WriteString("\nfunc (" + strings.ToLower(string(typeName[0])) + " *" + typeName + ") Accept(visitor " + baseName + "Visitor) " + returnType + " {\n")
 	file.WriteString("\t return visitor.Visit" + typeName + baseName + "(" + strings.ToLower(string(typeName[0])) + ")\n")
 	file.WriteString("}\n")
 }

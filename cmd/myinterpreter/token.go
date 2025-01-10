@@ -11,6 +11,11 @@ type Token struct {
 	line      int
 }
 
+// Accept implements Expr.
+func (t Token) Accept(visitor ExprVisitor) (interface{}, error) {
+	panic("unimplemented")
+}
+
 func (t Token) String() string {
 	return fmt.Sprintf("%v %s %s", t.tokenType, t.lexeme, t.formatLiteral())
 }

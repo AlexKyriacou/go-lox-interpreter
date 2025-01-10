@@ -19,9 +19,9 @@ func (i *Interpreter) VisitLiteralExpr(expr *Literal) (interface{}, error) {
 	return expr.value, nil
 }
 
-//  VisitLogicalExpr will evaluate the logical expression
-//  which is either the left or right expression
-//  depending on the operator and the truthiness of the left and right
+// VisitLogicalExpr will evaluate the logical expression
+// which is either the left or right expression
+// depending on the operator and the truthiness of the left and right
 func (i *Interpreter) VisitLogicalExpr(expr *Logical) (interface{}, error) {
 	left, err := i.evaluate(expr.left)
 	if err != nil {
@@ -143,47 +143,6 @@ func (i *Interpreter) VisitBinaryExpr(expr *Binary) (interface{}, error) {
 	return nil, nil
 }
 
-// checkNumberOperand will check if the operand is a number
-func (i *Interpreter) checkNumberOperand(operator Token, operand interface{}) error {
-	if _, ok := operand.(float64); ok {
-		return nil
-	}
-	return &RuntimeError{operator, "Operand must be a number,"}
-}
-
-// checkNumberOperands will check if the operands are numbers
-func (i *Interpreter) checkNumberOperands(operator Token, left interface{}, right interface{}) error {
-	if _, ok := left.(float64); ok {
-		if _, ok := right.(float64); ok {
-			return nil
-		}
-	}
-	return &RuntimeError{operator, "Operands must be numbers."}
-}
-
-// IsTruthy will return true if the value is not nil or false
-func (i *Interpreter) IsTruthy(value interface{}) bool {
-	switch value := value.(type) {
-	case nil:
-		return false
-	case bool:
-		return value
-	}
-	return true
-}
-
-// isEqual will compare two values and return true if they are equal
-// this currently uses golangs == operator which can be adjusted to
-// match the behaviour of lox
-func (i *Interpreter) isEqual(a interface{}, b interface{}) bool {
-	return a == b
-}
-
-// Evaluate will evaluate the expression
-func (i *Interpreter) evaluate(expr Expr) (interface{}, error) {
-	return expr.Accept(i)
-}
-
 // VisitVarStmt will evaluate the variable statement
 // and define the variable in the current environment
 // if there is an initializer, it will evaluate the initializer
@@ -198,6 +157,26 @@ func (i *Interpreter) VisitVarStmt(stmt *Var) error {
 	}
 
 	i.environment.define(stmt.name.lexeme, value)
+	return nil
+}
+
+// VisitWhileStmt will execute the while loop
+// executing the statement body until the condition is no longer true
+func (i *Interpreter) VisitWhileStmt(stmt *While) error {
+	value, err := i.evaluate(stmt.condition)
+	if err != nil {
+		return err
+	}
+	for i.IsTruthy(value) {
+		err := i.execute(stmt.body)
+		if err != nil {
+			return err
+		}
+		value, err = i.evaluate(stmt.condition)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -313,4 +292,45 @@ func (i *Interpreter) stringify(object interface{}) string {
 		return text
 	}
 	return fmt.Sprintf("%v", object)
+}
+
+// IsTruthy will return true if the value is not nil or false
+func (i *Interpreter) IsTruthy(value interface{}) bool {
+	switch value := value.(type) {
+	case nil:
+		return false
+	case bool:
+		return value
+	}
+	return true
+}
+
+// isEqual will compare two values and return true if they are equal
+// this currently uses golangs == operator which can be adjusted to
+// match the behaviour of lox
+func (i *Interpreter) isEqual(a interface{}, b interface{}) bool {
+	return a == b
+}
+
+// Evaluate will evaluate the expression
+func (i *Interpreter) evaluate(expr Expr) (interface{}, error) {
+	return expr.Accept(i)
+}
+
+// checkNumberOperand will check if the operand is a number
+func (i *Interpreter) checkNumberOperand(operator Token, operand interface{}) error {
+	if _, ok := operand.(float64); ok {
+		return nil
+	}
+	return &RuntimeError{operator, "Operand must be a number,"}
+}
+
+// checkNumberOperands will check if the operands are numbers
+func (i *Interpreter) checkNumberOperands(operator Token, left interface{}, right interface{}) error {
+	if _, ok := left.(float64); ok {
+		if _, ok := right.(float64); ok {
+			return nil
+		}
+	}
+	return &RuntimeError{operator, "Operands must be numbers."}
 }

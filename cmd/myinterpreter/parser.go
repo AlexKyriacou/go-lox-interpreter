@@ -57,13 +57,16 @@ func (p *Parser) varDeclaration() (Stmt, error) {
 }
 
 // represents the statment rule of the grammar
-// statement -> exprStmt | ifStmt | printStmt | block
+// statement -> exprStmt | ifStmt | printStmt | while | block
 func (p *Parser) statement() (Stmt, error) {
 	if p.match(IF) {
 		return p.ifStatement()
 	}
 	if p.match(PRINT) {
 		return p.printStatement()
+	}
+	if p.match(WHILE) {
+		return p.whileStatement()
 	}
 	if p.match(LEFT_BRACE) {
 		statements, err := p.block()
@@ -73,6 +76,32 @@ func (p *Parser) statement() (Stmt, error) {
 		return &Block{statements}, nil
 	}
 	return p.expressionStatement()
+}
+
+// represents the while statement rule of the grammar
+// whileStmt -> "while" "(" expression ")" statement ;
+func (p *Parser) whileStatement() (Stmt, error) {
+	_, err := p.consume(LEFT_PAREN, "Expect '(' after 'while'.")
+	if err != nil {
+		return nil, err
+	}
+
+	condition, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.consume(RIGHT_PAREN, "Expect ')' after condition.")
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	return &While{condition: condition, body: body}, nil
 }
 
 // represents the if statement rule of the grammar

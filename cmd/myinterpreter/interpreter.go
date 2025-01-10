@@ -194,6 +194,26 @@ func (i *Interpreter) VisitExpressionStmt(stmt *Expression) error {
 	return err
 }
 
+func (i *Interpreter) VisitIfStmt(stmt *If) error {
+	condition, err := i.evaluate(stmt.condition)
+	if err != nil {
+		return err
+	}
+
+	if i.IsTruthy(condition) {
+		err = i.execute(stmt.thenBranch)
+		if err != nil {
+			return err
+		}
+	} else if stmt.elseBranch != nil {
+		err = i.execute(stmt.elseBranch)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (i *Interpreter) VisitPrintStmt(stmt *Print) error {
 	value, err := i.evaluate(stmt.expression)
 	if err != nil {

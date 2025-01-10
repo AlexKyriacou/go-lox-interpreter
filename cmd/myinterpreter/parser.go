@@ -57,8 +57,11 @@ func (p *Parser) varDeclaration() (Stmt, error) {
 }
 
 // represents the statment rule of the grammar
-// statement -> exprStmt | printStmt | block
+// statement -> exprStmt | ifStmt | printStmt | block
 func (p *Parser) statement() (Stmt, error) {
+	if p.match(IF) {
+		return p.ifStatement()
+	}
 	if p.match(PRINT) {
 		return p.printStatement()
 	}
@@ -70,6 +73,36 @@ func (p *Parser) statement() (Stmt, error) {
 		return &Block{statements}, nil
 	}
 	return p.expressionStatement()
+}
+
+// represents the if statement rule of the grammar
+// ifStmt -> "if" "(" expression ")" statement
+//         ( "else" statement )? ;
+func (p *Parser) ifStatement() (Stmt, error) {
+	_, err := p.consume(LEFT_PAREN, "Expect '(' after 'if'.")
+	if err != nil {
+		return nil, err
+	}
+	condition, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(RIGHT_PAREN, "Expect ')' after if condition.")
+	if err != nil {
+		return nil, err
+	}
+	thenBranch, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+	var elseBranch Stmt = nil
+	if p.match(ELSE){
+		elseBranch, err = p.statement() 
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &If{condition: condition, thenBranch: thenBranch, elseBranch: elseBranch}, nil
 }
 
 // represents the block rule of the grammar

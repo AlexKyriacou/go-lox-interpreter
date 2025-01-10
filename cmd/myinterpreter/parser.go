@@ -77,7 +77,8 @@ func (p *Parser) statement() (Stmt, error) {
 
 // represents the if statement rule of the grammar
 // ifStmt -> "if" "(" expression ")" statement
-//         ( "else" statement )? ;
+//
+//	( "else" statement )? ;
 func (p *Parser) ifStatement() (Stmt, error) {
 	_, err := p.consume(LEFT_PAREN, "Expect '(' after 'if'.")
 	if err != nil {
@@ -96,8 +97,8 @@ func (p *Parser) ifStatement() (Stmt, error) {
 		return nil, err
 	}
 	var elseBranch Stmt = nil
-	if p.match(ELSE){
-		elseBranch, err = p.statement() 
+	if p.match(ELSE) {
+		elseBranch, err = p.statement()
 		if err != nil {
 			return nil, err
 		}
@@ -132,9 +133,9 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 }
 
 // represents the assignment rule of the grammar
-// assignment -> IDENTIFIER "=" assignment | equality ;
+// assignment -> IDENTIFIER "=" assignment | logic_or ;
 func (p *Parser) assignment() (Expr, error) {
-	expr, err := p.equality()
+	expr, err := p.or()
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +153,40 @@ func (p *Parser) assignment() (Expr, error) {
 		}
 
 		p.error(equals, "Invalid assignment target.")
+	}
+	return expr, nil
+}
+
+func (p *Parser) or() (Expr, error) {
+	expr, err := p.and()
+	if err != nil {
+		return nil, err
+	}
+	for p.match(OR) {
+		operator := p.previous()
+		right, err := p.and()
+		if err != nil {
+			return nil, err
+		}
+		expr = &Logical{expr, operator, right}
+	}
+
+	return expr, nil
+}
+
+func (p *Parser) and() (Expr, error) {
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.match(AND) {
+		operator := p.previous()
+		right, err := p.equality()
+		if err != nil {
+			return nil, err
+		}
+		expr = &Logical{expr, operator, right}
 	}
 	return expr, nil
 }

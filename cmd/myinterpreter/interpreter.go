@@ -19,6 +19,29 @@ func (i *Interpreter) VisitLiteralExpr(expr *Literal) (interface{}, error) {
 	return expr.value, nil
 }
 
+//  VisitLogicalExpr will evaluate the logical expression
+//  which is either the left or right expression
+//  depending on the operator and the truthiness of the left and right
+func (i *Interpreter) VisitLogicalExpr(expr *Logical) (interface{}, error) {
+	left, err := i.evaluate(expr.left)
+	if err != nil {
+		return nil, err
+	}
+
+	if expr.operator.tokenType == OR {
+		if i.IsTruthy(left) {
+			return left, nil
+		}
+	} else {
+		// we are in an AND condition
+		if !i.IsTruthy(left) {
+			return left, nil
+		}
+	}
+
+	return i.evaluate(expr.right)
+}
+
 // VisitGroupingExpr will evaluate the expression inside the grouping
 func (i *Interpreter) VisitGroupingExpr(expr *Grouping) (interface{}, error) {
 	return i.evaluate(expr.expression)
@@ -120,6 +143,7 @@ func (i *Interpreter) VisitBinaryExpr(expr *Binary) (interface{}, error) {
 	return nil, nil
 }
 
+// checkNumberOperand will check if the operand is a number
 func (i *Interpreter) checkNumberOperand(operator Token, operand interface{}) error {
 	if _, ok := operand.(float64); ok {
 		return nil
@@ -127,6 +151,7 @@ func (i *Interpreter) checkNumberOperand(operator Token, operand interface{}) er
 	return &RuntimeError{operator, "Operand must be a number,"}
 }
 
+// checkNumberOperands will check if the operands are numbers
 func (i *Interpreter) checkNumberOperands(operator Token, left interface{}, right interface{}) error {
 	if _, ok := left.(float64); ok {
 		if _, ok := right.(float64); ok {
@@ -159,6 +184,9 @@ func (i *Interpreter) evaluate(expr Expr) (interface{}, error) {
 	return expr.Accept(i)
 }
 
+// VisitVarStmt will evaluate the variable statement
+// and define the variable in the current environment
+// if there is an initializer, it will evaluate the initializer
 func (i *Interpreter) VisitVarStmt(stmt *Var) error {
 	var value interface{}
 	var err error
@@ -173,6 +201,10 @@ func (i *Interpreter) VisitVarStmt(stmt *Var) error {
 	return nil
 }
 
+// VisitAssignExpr will evaluate the assignment expression
+// and assign the value to the variable in the current environment
+// if the variable is not defined in the current environment
+// it will throw a runtime error
 func (i *Interpreter) VisitAssignExpr(expr *Assign) (interface{}, error) {
 	value, err := i.evaluate(expr.value)
 	if err != nil {
@@ -185,15 +217,23 @@ func (i *Interpreter) VisitAssignExpr(expr *Assign) (interface{}, error) {
 	return value, nil
 }
 
+// VisitVariableExpr will evaluate the variable expression
+// and return the value of the variable
 func (i *Interpreter) VisitVariableExpr(expr *Variable) (interface{}, error) {
 	return i.environment.get(expr.name)
 }
 
+// VisitExpressionStmt will evaluate the expression statement
+// and return the value of the expression
 func (i *Interpreter) VisitExpressionStmt(stmt *Expression) error {
 	_, err := i.evaluate(stmt.expression)
 	return err
 }
 
+// VisitIfStmt will evaluate the if statement
+// if the condition is truthy it will execute the then branch
+// if there is an else branch and the condition is falsey
+// it will execute the else branch
 func (i *Interpreter) VisitIfStmt(stmt *If) error {
 	condition, err := i.evaluate(stmt.condition)
 	if err != nil {
@@ -214,6 +254,8 @@ func (i *Interpreter) VisitIfStmt(stmt *If) error {
 	return nil
 }
 
+// VisitPrintStmt will evaluate the print statement
+// and print the value of the expression
 func (i *Interpreter) VisitPrintStmt(stmt *Print) error {
 	value, err := i.evaluate(stmt.expression)
 	if err != nil {
@@ -223,10 +265,14 @@ func (i *Interpreter) VisitPrintStmt(stmt *Print) error {
 	return nil
 }
 
+// VisitBlockStmt will evaluate the block statement
 func (i *Interpreter) VisitBlockStmt(stmt *Block) error {
 	return i.executeBlock(stmt.statements, NewEnvironment(i.environment))
 }
 
+// executeBlock will execute the block of statements
+// in a new environment. Before returning it will set the
+// environment back to the previous environment
 func (i *Interpreter) executeBlock(statements []Stmt, envionment *Envionment) error {
 	previous := i.environment
 	defer func() { i.environment = previous }()

@@ -5,9 +5,18 @@ type Stmt interface {
 }
 
 type StmtVisitor interface {
+	VisitBlockStmt(stmt *Block) error
 	VisitExpressionStmt(stmt *Expression) error
 	VisitPrintStmt(stmt *Print) error
 	VisitVarStmt(stmt *Var) error
+}
+
+type Block struct {
+	statements []Stmt
+}
+
+func (b *Block) Accept(visitor StmtVisitor) error {
+	return visitor.VisitBlockStmt(b)
 }
 
 type Expression struct {

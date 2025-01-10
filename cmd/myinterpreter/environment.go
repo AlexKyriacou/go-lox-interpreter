@@ -1,7 +1,12 @@
 package main
 
 type Envionment struct {
-	values map[string]interface{}
+	values    map[string]interface{}
+	enclosing *Envionment
+}
+
+func NewEnvironment(enclosing *Envionment) *Envionment {
+	return &Envionment{values: make(map[string]interface{}), enclosing: enclosing}
 }
 
 func (e *Envionment) define(name string, value interface{}) {
@@ -14,6 +19,10 @@ func (e *Envionment) get(name Token) (interface{}, error) {
 		return value, nil
 	}
 
+	if e.enclosing != nil {
+		return e.enclosing.get(name)
+	}
+
 	return nil, &RuntimeError{name, "Undefined variable '" + name.lexeme + "'."}
 }
 
@@ -22,6 +31,10 @@ func (e *Envionment) assign(name Token, value interface{}) error {
 	if exists {
 		e.values[name.lexeme] = value
 		return nil
+	}
+
+	if e.enclosing != nil {
+		return e.enclosing.assign(name, value)
 	}
 	return &RuntimeError{name, "Undefined variable '" + name.lexeme + "'."}
 }

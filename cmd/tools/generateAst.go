@@ -26,6 +26,7 @@ func main() {
 		os.Exit(1)
 	}
 	err = defineAst(outputDir, "Stmt", "error", []string{
+		"Block : []Stmt statements",
 		"Expression : Expr expression",
 		"Print      : Expr expression",
 		"Var        : Token name, Expr initializer",

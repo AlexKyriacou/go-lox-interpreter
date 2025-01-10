@@ -6,11 +6,11 @@ import (
 )
 
 type Interpreter struct {
-	environment Envionment
+	environment *Envionment
 }
 
 func NewInterpreter() Interpreter {
-	return Interpreter{Envionment{make(map[string]interface{})}}
+	return Interpreter{NewEnvironment(nil)}
 }
 
 // VisitLiteralExpression will evaluate the literal expression
@@ -200,6 +200,23 @@ func (i *Interpreter) VisitPrintStmt(stmt *Print) error {
 		return err
 	}
 	fmt.Println(i.stringify(value))
+	return nil
+}
+
+func (i *Interpreter) VisitBlockStmt(stmt *Block) error {
+	return i.executeBlock(stmt.statements, NewEnvironment(i.environment))
+}
+
+func (i *Interpreter) executeBlock(statements []Stmt, envionment *Envionment) error {
+	previous := i.environment
+	defer func() { i.environment = previous }()
+	i.environment = envionment
+	for _, statement := range statements {
+		err := i.execute(statement)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

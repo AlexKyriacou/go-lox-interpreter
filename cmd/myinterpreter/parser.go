@@ -49,15 +49,41 @@ func (p *Parser) varDeclaration() (Stmt, error) {
 		}
 	}
 
-	p.consume(SEMICOLON, "Expect ';' after variable declaration")
+	_, err = p.consume(SEMICOLON, "Expect ';' after variable declaration")
+	if err != nil {
+		return nil, err
+	}
 	return &Var{name, initializer}, nil
 }
 
+// represents the statment rule of the grammar
+// statement -> exprStmt | printStmt | block
 func (p *Parser) statement() (Stmt, error) {
 	if p.match(PRINT) {
 		return p.printStatement()
 	}
+	if p.match(LEFT_BRACE) {
+		statements, err := p.block()
+		if err != nil {
+			return nil, err
+		}
+		return &Block{statements}, nil
+	}
 	return p.expressionStatement()
+}
+
+// represents the block rule of the grammar
+// block -> "{" declaration* "{";
+func (p *Parser) block() ([]Stmt, error) {
+	var statements []Stmt
+	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
+		statements = append(statements, p.declaration())
+	}
+	_, err := p.consume(RIGHT_BRACE, "Expect '}' after block.")
+	if err != nil {
+		return nil, err
+	}
+	return statements, nil
 }
 
 func (p *Parser) expressionStatement() (Stmt, error) {
@@ -65,7 +91,10 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.consume(SEMICOLON, "Expect ';' after expression.")
+	_, err = p.consume(SEMICOLON, "Expect ';' after expression.")
+	if err != nil {
+		return nil, err
+	}
 	return &Expression{value}, nil
 }
 
@@ -99,7 +128,10 @@ func (p *Parser) printStatement() (Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.consume(SEMICOLON, "Expect ';' after value.")
+	_, err = p.consume(SEMICOLON, "Expect ';' after value.")
+	if err != nil {
+		return nil, err
+	}
 	return &Print{value}, nil
 }
 

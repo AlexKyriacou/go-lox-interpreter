@@ -1,6 +1,7 @@
 package main
 
 //go:generate go run ./../tools/generateAst.go ./
+//go:generate go fmt
 
 import (
 	"fmt"

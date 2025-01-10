@@ -59,6 +59,9 @@ func (p *Parser) varDeclaration() (Stmt, error) {
 // represents the statment rule of the grammar
 // statement -> exprStmt | ifStmt | printStmt | while | block
 func (p *Parser) statement() (Stmt, error) {
+	if p.match(FOR) {
+		return p.forStatement()
+	}
 	if p.match(IF) {
 		return p.ifStatement()
 	}
@@ -76,6 +79,75 @@ func (p *Parser) statement() (Stmt, error) {
 		return &Block{statements}, nil
 	}
 	return p.expressionStatement()
+}
+
+// represents the for statement rule of the grammar
+// forStmt -> "for" "(" ( varDecl | exprStmt | ";" )
+//
+//	expression? ";"
+//	expression? ")" statement ;
+func (p *Parser) forStatement() (Stmt, error) {
+	_, err := p.consume(LEFT_PAREN, "Expect '(' after 'for'.")
+	if err != nil {
+		return nil, err
+	}
+
+	var initializer Stmt
+	if p.match(SEMICOLON) {
+		initializer = nil
+	} else if p.match(VAR) {
+		initializer, err = p.varDeclaration()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		initializer, err = p.expressionStatement()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var condition Expr
+	if !p.check(SEMICOLON) {
+		condition, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = p.consume(SEMICOLON, "Expect ';' after loop condition.")
+	if err != nil {
+		return nil, err
+	}
+
+	var increment Expr
+	if !p.check(RIGHT_PAREN) {
+		increment, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = p.consume(RIGHT_PAREN, "Expect ')' after for clauses.")
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	// desuguaring the for loop into a while loop structure
+	if increment != nil {
+		body = &Block{[]Stmt{body, &Expression{increment}}}
+	}
+	if condition == nil {
+		condition = &Literal{true}
+	}
+	body = &While{condition: condition, body: body}
+	if initializer != nil {
+		body = &Block{[]Stmt{initializer, body}}
+	}
+	return body, nil
 }
 
 // represents the while statement rule of the grammar

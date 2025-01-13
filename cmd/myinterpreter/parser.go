@@ -19,16 +19,20 @@ func (p *Parser) parse() []Stmt {
 	return statements
 }
 
+// declaration represents the declaration rule of the grammar
+// declaration -> varDecl | statement | funDecl
 func (p *Parser) declaration() Stmt {
-	if p.match(VAR) {
-		stmt, err := p.varDeclaration()
-		if err != nil {
-			p.synchonize()
-			return nil
-		}
-		return stmt
+	var stmt Stmt
+	var err error
+
+	if p.match(FUN) {
+		stmt, err = p.function("function")
+	} else if p.match(VAR) {
+		stmt, err = p.varDeclaration()
+	} else {
+		stmt, err = p.statement()
 	}
-	stmt, err := p.statement()
+
 	if err != nil {
 		p.synchonize()
 		return nil
@@ -36,6 +40,54 @@ func (p *Parser) declaration() Stmt {
 	return stmt
 }
 
+// function represents the function rule of the grammar
+// function -> IDENTIFIER "(" parameters? ")" block;
+func (p *Parser) function(kind string) (Stmt, error) {
+	name, err := p.consume(IDENTIFIER, "Expect "+kind+"name.")
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(LEFT_PAREN, "Expect '(' after "+kind+" name.")
+	if err != nil {
+		return nil, err
+	}
+	var parameters []Token
+	if !p.check(RIGHT_PAREN) {
+		for {
+			if len(parameters) >= 255 {
+				p.error(p.peek(), "Can't have more than 255 parameters.")
+			}
+
+			parameter, err := p.consume(IDENTIFIER, "Expect parameter name.")
+			if err != nil {
+				return nil, err
+			}
+			parameters = append(parameters, parameter)
+
+			if !p.match(COMMA) {
+				break
+			}
+		}
+	}
+	_, err = p.consume(RIGHT_PAREN, "Expect ')' after parameters.")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.consume(LEFT_BRACE, "Expect '{' before"+kind+" body")
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := p.block()
+	if err != nil {
+		return nil, err
+	}
+	return &Function{name, parameters, body}, nil
+}
+
+// varDeclaration represents the var declaration rule of the grammar
+// varDecl -> "var" IDENTIFIER ( "=" expression )? ";";
 func (p *Parser) varDeclaration() (Stmt, error) {
 	name, err := p.consume(IDENTIFIER, "Expect variable name.")
 	if err != nil {
@@ -429,7 +481,7 @@ func (p *Parser) finishCall(callee Expr) (Expr, error) {
 	var arguments []Expr
 	if !p.check(RIGHT_PAREN) {
 		for {
-			if len(arguments)  >= 255{
+			if len(arguments) >= 255 {
 				p.error(p.peek(), "Can't have more than 255 arguements.")
 			}
 			value, err := p.expression()

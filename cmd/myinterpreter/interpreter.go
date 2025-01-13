@@ -7,7 +7,7 @@ import (
 
 type Interpreter struct {
 	environment *Envionment
-	globals *Envionment
+	globals     *Envionment
 }
 
 func NewInterpreter() Interpreter {

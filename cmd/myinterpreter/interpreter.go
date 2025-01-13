@@ -240,6 +240,13 @@ func (i *Interpreter) VisitExpressionStmt(stmt *Expression) error {
 	return err
 }
 
+// VisitFunctionStmt will define the function in the current environment
+func (i *Interpreter) VisitFunctionStmt(stmt *Function) error {
+	function := &LoxFunction{declaration: *stmt}
+	i.environment.define(stmt.name.lexeme, function)
+	return nil
+}
+
 // VisitIfStmt will evaluate the if statement
 // if the condition is truthy it will execute the then branch
 // if there is an else branch and the condition is falsey

@@ -1,6 +1,6 @@
 package main
 
 type Callable interface {
-	call(interpreter *Interpreter, arguements []interface{}) (interface{}, error)
+	call(interpreter *Interpreter, arguments []interface{}) (interface{}, error)
 	arity() int
 }

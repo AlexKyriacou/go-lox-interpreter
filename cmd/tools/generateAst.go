@@ -16,6 +16,7 @@ func main() {
 	err := defineAst(outputDir, "Expr", "(interface{}, error)", []string{
 		"Assign : Token name, Expr value",
 		"Binary : Expr left, Token operator, Expr right",
+		"Call     : Expr callee, Token paren, []Expr arguments",
 		"Grouping : Expr expression",
 		"Literal : interface{} value",
 		"Logical  : Expr left, Token operator, Expr right",

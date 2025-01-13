@@ -402,7 +402,53 @@ func (p *Parser) unary() (Expr, error) {
 		}
 		return &Unary{operator: operator, right: right}, nil
 	}
-	return p.primary()
+	return p.call()
+}
+
+func (p *Parser) call() (Expr, error) {
+	expr, err := p.primary()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		if p.match(LEFT_PAREN) {
+			expr, err = p.finishCall(expr)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			break
+		}
+	}
+
+	return expr, nil
+}
+
+func (p *Parser) finishCall(callee Expr) (Expr, error) {
+	var arguments []Expr
+	if !p.check(RIGHT_PAREN) {
+		for {
+			if len(arguments)  >= 255{
+				p.error(p.peek(), "Can't have more than 255 arguements.")
+			}
+			value, err := p.expression()
+			if err != nil {
+				return nil, err
+			}
+			arguments = append(arguments, value)
+			if !p.match(COMMA) {
+				break
+			}
+		}
+	}
+
+	paren, err := p.consume(RIGHT_PAREN, "Expect ')' after arguements.")
+	if err != nil {
+		return nil, err
+	}
+
+	return &Call{callee: callee, paren: paren, arguments: arguments}, nil
 }
 
 // represents the primary rule of the grammar

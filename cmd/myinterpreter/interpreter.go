@@ -7,10 +7,13 @@ import (
 
 type Interpreter struct {
 	environment *Envionment
+	globals *Envionment
 }
 
 func NewInterpreter() Interpreter {
-	return Interpreter{NewEnvironment(nil)}
+	globals := NewEnvironment(nil)
+	globals.define("clock", clock{})
+	return Interpreter{globals: globals, environment: NewEnvironment(globals)}
 }
 
 // VisitLiteralExpression will evaluate the literal expression
@@ -141,6 +144,34 @@ func (i *Interpreter) VisitBinaryExpr(expr *Binary) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+func (i *Interpreter) VisitCallExpr(expr *Call) (interface{}, error) {
+	callee, err := i.evaluate(expr.callee)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []interface{}
+	for _, argument := range expr.arguments {
+		arg, err := i.evaluate(argument)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, arg)
+	}
+
+	if _, ok := callee.(Callable); !ok {
+		return nil, &RuntimeError{expr.paren, "Can only call functions and classes."}
+	}
+	function := callee.(Callable)
+	if len(arguments) != function.arity() {
+		return nil, &RuntimeError{expr.paren, "Expected " +
+			fmt.Sprintf("%d", function.arity()) +
+			" arguments but got " +
+			fmt.Sprintf("%d", len(arguments)) + "."}
+	}
+	return function.call(i, arguments)
 }
 
 // VisitVarStmt will evaluate the variable statement

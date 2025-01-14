@@ -4,10 +4,11 @@ import "errors"
 
 type LoxFunction struct {
 	declaration Function
+	closure *Envionment
 }
 
 func (l *LoxFunction) call(interpreter *Interpreter, arguments []interface{}) (interface{}, error) {
-	var environment = NewEnvironment(interpreter.globals)
+	var environment = NewEnvironment(l.closure)
 	for i, param := range l.declaration.params {
 		environment.define(param.lexeme, arguments[i])
 	}

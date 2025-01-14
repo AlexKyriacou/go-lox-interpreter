@@ -241,7 +241,7 @@ func (i *Interpreter) VisitExpressionStmt(stmt *Expression) error {
 
 // VisitFunctionStmt will define the function in the current environment
 func (i *Interpreter) VisitFunctionStmt(stmt *Function) error {
-	function := &LoxFunction{declaration: *stmt}
+	function := &LoxFunction{declaration: *stmt, closure: i.environment}
 	i.environment.define(stmt.name.lexeme, function)
 	return nil
 }
@@ -336,7 +336,7 @@ func (i *Interpreter) stringify(object interface{}) string {
 	if object == nil {
 		return "nil"
 	}
-	
+
 	if fnum, ok := object.(float64); ok {
 		if fnum == float64(int(fnum)) {
 			return fmt.Sprintf("%.0f", fnum)

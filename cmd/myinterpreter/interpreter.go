@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 )
 
 type Interpreter struct {
@@ -13,7 +12,7 @@ type Interpreter struct {
 func NewInterpreter() Interpreter {
 	globals := NewEnvironment(nil)
 	globals.define("clock", clock{})
-	return Interpreter{globals: globals, environment: NewEnvironment(globals)}
+	return Interpreter{globals: globals, environment: globals}
 }
 
 // VisitLiteralExpression will evaluate the literal expression
@@ -282,6 +281,22 @@ func (i *Interpreter) VisitPrintStmt(stmt *Print) error {
 	return nil
 }
 
+// VisitReturnStatement will evaluate the return statement
+// and return the value of the expression as an error to be caught
+// by the most recent function call
+func (i *Interpreter) VisitReturnStmt(stmt *Return) error {
+	var value interface{}
+	var err error
+
+	if stmt.value != nil {
+		value, err = i.evaluate(stmt.value)
+		if err != nil {
+			return err
+		}
+	}
+	return &ReturnException{value}
+}
+
 // VisitBlockStmt will evaluate the block statement
 func (i *Interpreter) VisitBlockStmt(stmt *Block) error {
 	return i.executeBlock(stmt.statements, NewEnvironment(i.environment))
@@ -321,13 +336,13 @@ func (i *Interpreter) stringify(object interface{}) string {
 	if object == nil {
 		return "nil"
 	}
-
-	if _, ok := object.(float64); ok {
-		text := fmt.Sprintf("%v", object)
-		if strings.HasSuffix(text, ".0") {
-			text = text[0:]
+	
+	if fnum, ok := object.(float64); ok {
+		if fnum == float64(int(fnum)) {
+			return fmt.Sprintf("%.0f", fnum)
+		} else {
+			return fmt.Sprintf("%g", fnum)
 		}
-		return text
 	}
 	return fmt.Sprintf("%v", object)
 }

@@ -120,6 +120,9 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.match(PRINT) {
 		return p.printStatement()
 	}
+	if p.match(RETURN) {
+		return p.returnStatement()
+	}
 	if p.match(WHILE) {
 		return p.whileStatement()
 	}
@@ -131,6 +134,27 @@ func (p *Parser) statement() (Stmt, error) {
 		return &Block{statements}, nil
 	}
 	return p.expressionStatement()
+}
+
+// represents the return statement rule of the grammar
+// returnStmt -> "return" expression? ";";
+func (p *Parser) returnStatement() (Stmt, error) {
+	var err error
+	keyword := p.previous()
+	var value Expr = nil
+
+	if !p.check(SEMICOLON) {
+		value, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	_, err = p.consume(SEMICOLON, "Expect ';' after return value.")
+	if err != nil {
+		return nil, err
+	}
+	return &Return{keyword, value}, nil
 }
 
 // represents the for statement rule of the grammar

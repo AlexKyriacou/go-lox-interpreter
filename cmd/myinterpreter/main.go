@@ -43,6 +43,12 @@ func main() {
 		if hadError {
 			os.Exit(65)
 		}
+
+		var resolver Resolver = *NewResolver(&interpreter) 
+		resolver.resolveStatements(statements) 
+		if hadError{
+			os.Exit(65)
+		}
 		interpreter.interpret(statements)
 		if hadRuntimeError {
 			os.Exit(70)

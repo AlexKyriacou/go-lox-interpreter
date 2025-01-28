@@ -7,12 +7,17 @@ import (
 type Interpreter struct {
 	environment *Envionment
 	globals     *Envionment
+	locals      map[Expr]int
 }
 
 func NewInterpreter() Interpreter {
 	globals := NewEnvironment(nil)
 	globals.define("clock", clock{})
-	return Interpreter{globals: globals, environment: globals}
+	return Interpreter{
+		globals:     globals,
+		environment: globals,
+		locals:      make(map[Expr]int),
+	}
 }
 
 // VisitLiteralExpression will evaluate the literal expression
@@ -219,17 +224,33 @@ func (i *Interpreter) VisitAssignExpr(expr *Assign) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = i.environment.assign(expr.name, value)
-	if err != nil {
-		return nil, err
+
+	distance, found := i.locals[expr]
+	if found {
+		i.environment.assignAt(distance, expr.name, value)
+	} else {
+		err := i.globals.assign(expr.name, value)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return value, nil
 }
 
 // VisitVariableExpr will evaluate the variable expression
 // and return the value of the variable
 func (i *Interpreter) VisitVariableExpr(expr *Variable) (interface{}, error) {
-	return i.environment.get(expr.name)
+	return i.lookUpVariable(expr.name, expr)
+}
+
+func (i *Interpreter) lookUpVariable(name Token, expr *Variable) (interface{}, error) {
+	distance, found := i.locals[expr]
+	if found {
+		return i.environment.getAt(distance, name.lexeme), nil
+	} else {
+		return i.globals.get(name)
+	}
 }
 
 // VisitExpressionStmt will evaluate the expression statement
@@ -330,6 +351,10 @@ func (i *Interpreter) interpret(statements []Stmt) {
 
 func (i *Interpreter) execute(statement Stmt) error {
 	return statement.Accept(i)
+}
+
+func (i *Interpreter) resolve(expr Expr, depth int) {
+	i.locals[expr] = depth
 }
 
 func (i *Interpreter) stringify(object interface{}) string {

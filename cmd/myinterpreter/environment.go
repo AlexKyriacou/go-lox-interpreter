@@ -26,6 +26,22 @@ func (e *Envionment) get(name Token) (interface{}, error) {
 	return nil, &RuntimeError{name, "Undefined variable '" + name.lexeme + "'."}
 }
 
+func (e *Envionment) getAt(distance int, name string) interface{} {
+	return e.ancestor(distance).values[name]
+}
+
+func (e *Envionment) assignAt(distance int, name Token, value interface{}) {
+	e.ancestor(distance).values[name.lexeme] = value
+}
+
+func (e *Envionment) ancestor(distance int) *Envionment {
+	var environment *Envionment = e
+	for i := 0; i < distance; i++ {
+		environment = environment.enclosing
+	}
+	return environment
+}
+
 func (e *Envionment) assign(name Token, value interface{}) error {
 	_, exists := e.values[name.lexeme]
 	if exists {

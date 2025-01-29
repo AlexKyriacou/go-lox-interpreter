@@ -15,6 +15,11 @@ func (l *LoxInstance) get(name Token) (interface{}, error) {
 		return field, nil
 	}
 
+	method, prs := l.class.findMethod(name.lexeme)
+	if prs {
+		return method, nil
+	}
+
 	return nil, &RuntimeError{name, "Undefiend property '" + name.lexeme + "'."}
 }
 

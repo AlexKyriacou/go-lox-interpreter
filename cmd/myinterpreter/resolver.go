@@ -11,6 +11,7 @@ type FunctionType int
 const (
 	NONE FunctionType = iota
 	FUNCTION
+	METHOD
 )
 
 func NewResolver(interpreter *Interpreter) *Resolver {
@@ -153,6 +154,10 @@ func (r *Resolver) VisitBlockStmt(stmt *Block) error {
 func (r *Resolver) VisitClassStmt(stmt *Class) error {
 	r.declare(stmt.name)
 	r.define(stmt.name)
+	for _, method := range stmt.methods {
+		declaration := METHOD
+		r.resolveFunction(&method, declaration)
+	}
 	return nil
 }
 

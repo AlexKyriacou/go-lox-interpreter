@@ -363,7 +363,14 @@ func (i *Interpreter) VisitBlockStmt(stmt *Block) error {
 
 func (i *Interpreter) VisitClassStmt(stmt *Class) error {
 	i.environment.define(stmt.name.lexeme, nil)
-	var class LoxClass = LoxClass{stmt.name.lexeme}
+
+	var methods map[string]LoxFunction = make(map[string]LoxFunction)
+	for _, method := range stmt.methods {
+		function := LoxFunction{method, i.environment}
+		methods[method.name.lexeme] = function
+	}
+
+	var class LoxClass = LoxClass{stmt.name.lexeme, methods}
 	i.environment.assign(stmt.name, class)
 	return nil
 }

@@ -573,6 +573,8 @@ func (p *Parser) primary() (Expr, error) {
 		return &Literal{nil}, nil
 	} else if p.match(NUMBER, STRING) {
 		return &Literal{p.previous().literal}, nil
+	} else if p.match(THIS) {
+		return &This{p.previous()}, nil
 	} else if p.match(IDENTIFIER) {
 		return &Variable{p.previous()}, nil
 	} else if p.match(LEFT_PAREN) {

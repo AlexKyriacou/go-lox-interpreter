@@ -7,6 +7,12 @@ type LoxFunction struct {
 	closure     *Envionment
 }
 
+func (l *LoxFunction) bind(instance *LoxInstance) LoxFunction {
+	var environment *Envionment = NewEnvironment(l.closure)
+	environment.define("this", instance)
+	return LoxFunction{l.declaration, environment}
+}
+
 func (l LoxFunction) call(interpreter *Interpreter, arguments []interface{}) (interface{}, error) {
 	var environment = NewEnvironment(l.closure)
 	for i, param := range l.declaration.params {

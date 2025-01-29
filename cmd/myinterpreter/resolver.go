@@ -3,19 +3,27 @@ package main
 type Resolver struct {
 	scopes          stack[map[string]bool]
 	currentFunction FunctionType
+	currentClass    ClassType
 	interpreter     *Interpreter
 }
 
 type FunctionType int
 
 const (
-	NONE FunctionType = iota
-	FUNCTION
-	METHOD
+	FUNCTION_NONE FunctionType = iota
+	FUNCTION_FUNCTION
+	FUNCTION_METHOD
+)
+
+type ClassType int
+
+const (
+	CLASS_NONE ClassType = iota
+	CLASS_CLASS
 )
 
 func NewResolver(interpreter *Interpreter) *Resolver {
-	return &Resolver{interpreter: interpreter, currentFunction: NONE, scopes: *NewStack[map[string]bool]()}
+	return &Resolver{interpreter: interpreter, currentFunction: FUNCTION_NONE, currentClass: CLASS_NONE, scopes: *NewStack[map[string]bool]()}
 }
 
 func (r *Resolver) endScope() {
@@ -86,7 +94,7 @@ func (r *Resolver) VisitFunctionStmt(stmt *Function) error {
 	r.declare(stmt.name)
 	r.define(stmt.name)
 
-	r.resolveFunction(stmt, FUNCTION)
+	r.resolveFunction(stmt, FUNCTION_FUNCTION)
 	return nil
 }
 
@@ -119,7 +127,7 @@ func (r *Resolver) VisitPrintStmt(stmt *Print) error {
 }
 
 func (r *Resolver) VisitReturnStmt(stmt *Return) error {
-	if r.currentFunction == NONE {
+	if r.currentFunction == FUNCTION_NONE {
 		r.error(stmt.keyword, "Can't return from top-level code.")
 	}
 
@@ -152,12 +160,23 @@ func (r *Resolver) VisitBlockStmt(stmt *Block) error {
 }
 
 func (r *Resolver) VisitClassStmt(stmt *Class) error {
+	var enclosingClass ClassType = r.currentClass
+	r.currentClass = CLASS_CLASS
+	defer func() { r.currentClass = enclosingClass }()
+
 	r.declare(stmt.name)
 	r.define(stmt.name)
+
+	r.beginScope()
+	r.scopes.Peek()["this"] = true
+
 	for _, method := range stmt.methods {
-		declaration := METHOD
+		declaration := FUNCTION_METHOD
 		r.resolveFunction(&method, declaration)
 	}
+
+	r.endScope()
+
 	return nil
 }
 
@@ -204,6 +223,15 @@ func (r *Resolver) VisitLogicalExpr(expr *Logical) (interface{}, error) {
 func (r *Resolver) VisitSetExpr(expr *Set) (interface{}, error) {
 	r.resolveExpression(expr.value)
 	r.resolveExpression(expr.object)
+	return nil, nil
+}
+
+func (r *Resolver) VisitThisExpr(expr *This) (interface{}, error) {
+	if r.currentClass == CLASS_NONE {
+		r.error(expr.keyword, "Can't use 'this' outside of a class.")
+		return nil, nil
+	}
+	r.resolveLocal(expr, expr.keyword)
 	return nil, nil
 }
 

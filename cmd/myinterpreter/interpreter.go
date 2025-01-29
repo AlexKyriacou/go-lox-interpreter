@@ -71,6 +71,10 @@ func (i *Interpreter) VisitSetExpr(expr *Set) (interface{}, error) {
 	return value, nil
 }
 
+func (i *Interpreter) VisitThisExpr(expr *This) (interface{}, error) {
+	return i.lookUpVariable(expr.keyword, expr)
+}
+
 // VisitGroupingExpr will evaluate the expression inside the grouping
 func (i *Interpreter) VisitGroupingExpr(expr *Grouping) (interface{}, error) {
 	return i.evaluate(expr.expression)
@@ -282,7 +286,7 @@ func (i *Interpreter) VisitVariableExpr(expr *Variable) (interface{}, error) {
 	return i.lookUpVariable(expr.name, expr)
 }
 
-func (i *Interpreter) lookUpVariable(name Token, expr *Variable) (interface{}, error) {
+func (i *Interpreter) lookUpVariable(name Token, expr Expr) (interface{}, error) {
 	distance, found := i.locals[expr]
 	if found {
 		return i.environment.getAt(distance, name.lexeme), nil

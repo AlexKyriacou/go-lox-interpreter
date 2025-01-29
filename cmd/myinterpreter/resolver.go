@@ -118,10 +118,10 @@ func (r *Resolver) VisitPrintStmt(stmt *Print) error {
 }
 
 func (r *Resolver) VisitReturnStmt(stmt *Return) error {
-	if r.currentFunction == NONE{
+	if r.currentFunction == NONE {
 		r.error(stmt.keyword, "Can't return from top-level code.")
 	}
-	
+
 	if stmt.value != nil {
 		r.resolveExpression(stmt.value)
 	}
@@ -150,6 +150,12 @@ func (r *Resolver) VisitBlockStmt(stmt *Block) error {
 	return nil
 }
 
+func (r *Resolver) VisitClassStmt(stmt *Class) error {
+	r.declare(stmt.name)
+	r.define(stmt.name)
+	return nil
+}
+
 func (r *Resolver) VisitAssignExpr(expr *Assign) (interface{}, error) {
 	r.resolveExpression(expr.value)
 	r.resolveLocal(expr, expr.name)
@@ -170,6 +176,11 @@ func (r *Resolver) VisitCallExpr(expr *Call) (interface{}, error) {
 	return nil, nil
 }
 
+func (r *Resolver) VisitGetExpr(expr *Get) (interface{}, error) {
+	r.resolveExpression(expr.object)
+	return nil, nil
+}
+
 func (r *Resolver) VisitGroupingExpr(expr *Grouping) (interface{}, error) {
 	r.resolveExpression(expr.expression)
 	return nil, nil
@@ -185,14 +196,19 @@ func (r *Resolver) VisitLogicalExpr(expr *Logical) (interface{}, error) {
 	return nil, nil
 }
 
+func (r *Resolver) VisitSetExpr(expr *Set) (interface{}, error) {
+	r.resolveExpression(expr.value)
+	r.resolveExpression(expr.object)
+	return nil, nil
+}
+
 func (r *Resolver) VisitUnaryExpr(expr *Unary) (interface{}, error) {
 	r.resolveExpression(expr.right)
 	return nil, nil
 }
 
 func (r *Resolver) VisitVariableExpr(expr *Variable) (interface{}, error) {
-	isDefined := r.scopes.Peek()[expr.name.lexeme]
-	if r.scopes.isEmpty() && !isDefined {
+	if !r.scopes.isEmpty() && !r.scopes.Peek()[expr.name.lexeme] {
 		report(expr.name.line, "", "Can't read local variable in its own initializer.")
 	}
 	r.resolveLocal(expr, expr.name)

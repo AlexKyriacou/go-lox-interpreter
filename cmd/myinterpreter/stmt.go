@@ -6,6 +6,7 @@ type Stmt interface {
 
 type StmtVisitor interface {
 	VisitBlockStmt(stmt *Block) error
+	VisitClassStmt(stmt *Class) error
 	VisitExpressionStmt(stmt *Expression) error
 	VisitFunctionStmt(stmt *Function) error
 	VisitIfStmt(stmt *If) error
@@ -21,6 +22,15 @@ type Block struct {
 
 func (b *Block) Accept(visitor StmtVisitor) error {
 	return visitor.VisitBlockStmt(b)
+}
+
+type Class struct {
+	name    Token
+	methods []Function
+}
+
+func (c *Class) Accept(visitor StmtVisitor) error {
+	return visitor.VisitClassStmt(c)
 }
 
 type Expression struct {

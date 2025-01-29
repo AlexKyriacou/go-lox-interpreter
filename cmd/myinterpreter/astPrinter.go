@@ -7,6 +7,16 @@ import (
 
 type AstPrinter struct{}
 
+// VisitSetExpr implements ExprVisitor.
+func (p *AstPrinter) VisitSetExpr(expr *Set) (interface{}, error) {
+	return p.parenthesize("set", expr.object, expr.name, expr.value)
+}
+
+// VisitGetExpr implements ExprVisitor.
+func (p *AstPrinter) VisitGetExpr(expr *Get) (interface{}, error) {
+	return p.parenthesize("get", expr.object, expr.name)
+}
+
 func (p *AstPrinter) VisitBinaryExpr(expr *Binary) (interface{}, error) {
 	return p.parenthesize(expr.operator.lexeme, expr.left, expr.right)
 }

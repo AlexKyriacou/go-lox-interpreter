@@ -49,6 +49,28 @@ func (i *Interpreter) VisitLogicalExpr(expr *Logical) (interface{}, error) {
 	return i.evaluate(expr.right)
 }
 
+// VisitSetExpr will evaluate the object whos property is being set and check
+// to see if its a LoxInstance. If not, thats a runtime error. Otherwise,
+// we evaluate the value being set and store it on the instance.
+func (i *Interpreter) VisitSetExpr(expr *Set) (interface{}, error) {
+	object, err := i.evaluate(expr.object)
+	if err != nil {
+		return nil, err
+	}
+
+	instance, ok := object.(*LoxInstance)
+	if !ok {
+		return nil, &RuntimeError{expr.name, "Only instances have fields."}
+	}
+
+	value, err := i.evaluate(expr.value)
+	if err != nil {
+		return nil, err
+	}
+	instance.set(expr.name, value)
+	return value, nil
+}
+
 // VisitGroupingExpr will evaluate the expression inside the grouping
 func (i *Interpreter) VisitGroupingExpr(expr *Grouping) (interface{}, error) {
 	return i.evaluate(expr.expression)
@@ -176,6 +198,22 @@ func (i *Interpreter) VisitCallExpr(expr *Call) (interface{}, error) {
 			fmt.Sprintf("%d", len(arguments)) + "."}
 	}
 	return function.call(i, arguments)
+}
+
+// VisitGetExpr will evaluate the expression whos property is being accessed
+// In Lox, only instances of classes have properties. If the object is some
+// other type like a number, inboking a getter is a runtime error
+func (i *Interpreter) VisitGetExpr(expr *Get) (interface{}, error) {
+	object, err := i.evaluate(expr.object)
+	if err != nil {
+		return nil, err
+	}
+
+	if instance, ok := object.(*LoxInstance); ok {
+		return instance.get(expr.name)
+	}
+
+	return nil, &RuntimeError{expr.name, "Only instances have properties."}
 }
 
 // VisitVarStmt will evaluate the variable statement
@@ -321,6 +359,13 @@ func (i *Interpreter) VisitReturnStmt(stmt *Return) error {
 // VisitBlockStmt will evaluate the block statement
 func (i *Interpreter) VisitBlockStmt(stmt *Block) error {
 	return i.executeBlock(stmt.statements, NewEnvironment(i.environment))
+}
+
+func (i *Interpreter) VisitClassStmt(stmt *Class) error {
+	i.environment.define(stmt.name.lexeme, nil)
+	var class LoxClass = LoxClass{stmt.name.lexeme}
+	i.environment.assign(stmt.name, class)
+	return nil
 }
 
 // executeBlock will execute the block of statements

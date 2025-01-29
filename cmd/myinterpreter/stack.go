@@ -56,7 +56,7 @@ func (s *stack[T]) isEmpty() bool {
 	return s.dll.Len() == 0
 }
 
-func (s *stack[T]) get(i int) T{
+func (s *stack[T]) get(i int) T {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -68,5 +68,5 @@ func (s *stack[T]) get(i int) T{
 	for j := 0; j < i; j++ {
 		e = e.Next()
 	}
-	return e.Value.(T)	
+	return e.Value.(T)
 }

@@ -20,12 +20,13 @@ func (p *Parser) parse() []Stmt {
 }
 
 // declaration represents the declaration rule of the grammar
-// declaration -> varDecl | statement | funDecl
+// declaration -> varDecl | statement | funDecl | classDecl
 func (p *Parser) declaration() Stmt {
 	var stmt Stmt
 	var err error
-
-	if p.match(FUN) {
+	if p.match(CLASS) {
+		stmt, err = p.classDeclaration()
+	} else if p.match(FUN) {
 		stmt, err = p.function("function")
 	} else if p.match(VAR) {
 		stmt, err = p.varDeclaration()
@@ -40,9 +41,34 @@ func (p *Parser) declaration() Stmt {
 	return stmt
 }
 
+func (p *Parser) classDeclaration() (Stmt, error) {
+	name, err := p.consume(IDENTIFIER, "Expect class name.")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.consume(LEFT_BRACE, "Expect '{' before class body.")
+	if err != nil {
+		return nil, err
+	}
+
+	var methods []Function
+	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
+		method, err := p.function("method")
+		if err != nil {
+			return nil, err
+		}
+		methods = append(methods, *method)
+	}
+
+	p.consume(RIGHT_BRACE, "Expect '}' after class body.")
+
+	return &Class{name, methods}, nil
+}
+
 // function represents the function rule of the grammar
 // function -> IDENTIFIER "(" parameters? ")" block;
-func (p *Parser) function(kind string) (Stmt, error) {
+func (p *Parser) function(kind string) (*Function, error) {
 	name, err := p.consume(IDENTIFIER, "Expect "+kind+"name.")
 	if err != nil {
 		return nil, err
@@ -323,10 +349,11 @@ func (p *Parser) assignment() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		variable, ok := expr.(*Variable)
-		if ok {
+		if variable, ok := expr.(*Variable); ok {
 			name := variable.name
 			return &Assign{name, value}, nil
+		} else if get, ok := expr.(*Get); ok {
+			return &Set{get.object, get.name, value}, nil
 		}
 
 		p.error(equals, "Invalid assignment target.")
@@ -481,6 +508,8 @@ func (p *Parser) unary() (Expr, error) {
 	return p.call()
 }
 
+// represents the call rule of the grammer
+// call -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 func (p *Parser) call() (Expr, error) {
 	expr, err := p.primary()
 	if err != nil {
@@ -493,6 +522,12 @@ func (p *Parser) call() (Expr, error) {
 			if err != nil {
 				return nil, err
 			}
+		} else if p.match(DOT) {
+			name, err := p.consume(IDENTIFIER, "Expect property name after '.'.")
+			if err != nil {
+				return nil, err
+			}
+			expr = &Get{expr, name}
 		} else {
 			break
 		}

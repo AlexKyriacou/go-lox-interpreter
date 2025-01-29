@@ -304,7 +304,7 @@ func (i *Interpreter) VisitExpressionStmt(stmt *Expression) error {
 
 // VisitFunctionStmt will define the function in the current environment
 func (i *Interpreter) VisitFunctionStmt(stmt *Function) error {
-	function := &LoxFunction{declaration: *stmt, closure: i.environment}
+	function := &LoxFunction{*stmt, i.environment, false}
 	i.environment.define(stmt.name.lexeme, function)
 	return nil
 }
@@ -370,7 +370,7 @@ func (i *Interpreter) VisitClassStmt(stmt *Class) error {
 
 	var methods map[string]LoxFunction = make(map[string]LoxFunction)
 	for _, method := range stmt.methods {
-		function := LoxFunction{method, i.environment}
+		function := LoxFunction{method, i.environment, method.name.lexeme == "init"}
 		methods[method.name.lexeme] = function
 	}
 

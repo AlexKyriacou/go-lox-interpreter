@@ -12,6 +12,7 @@ type FunctionType int
 const (
 	FUNCTION_NONE FunctionType = iota
 	FUNCTION_FUNCTION
+	FUNCTION_INITIALIZER
 	FUNCTION_METHOD
 )
 
@@ -132,6 +133,9 @@ func (r *Resolver) VisitReturnStmt(stmt *Return) error {
 	}
 
 	if stmt.value != nil {
+		if r.currentFunction == FUNCTION_INITIALIZER {
+			r.error(stmt.keyword, "Can't return a value from an initializer.")
+		}
 		r.resolveExpression(stmt.value)
 	}
 	return nil
@@ -172,6 +176,9 @@ func (r *Resolver) VisitClassStmt(stmt *Class) error {
 
 	for _, method := range stmt.methods {
 		declaration := FUNCTION_METHOD
+		if method.name.lexeme == "init" {
+			declaration = FUNCTION_INITIALIZER
+		}
 		r.resolveFunction(&method, declaration)
 	}
 

@@ -3,14 +3,15 @@ package main
 import "errors"
 
 type LoxFunction struct {
-	declaration Function
-	closure     *Envionment
+	declaration   Function
+	closure       *Envionment
+	isInitializer bool
 }
 
 func (l *LoxFunction) bind(instance *LoxInstance) LoxFunction {
 	var environment *Envionment = NewEnvironment(l.closure)
 	environment.define("this", instance)
-	return LoxFunction{l.declaration, environment}
+	return LoxFunction{l.declaration, environment, l.isInitializer}
 }
 
 func (l LoxFunction) call(interpreter *Interpreter, arguments []interface{}) (interface{}, error) {
@@ -22,12 +23,18 @@ func (l LoxFunction) call(interpreter *Interpreter, arguments []interface{}) (in
 	err := interpreter.executeBlock(l.declaration.body, environment)
 	if err != nil {
 		if errors.Is(err, &ReturnException{}) {
+			if l.isInitializer {
+				return l.closure.getAt(0, "this"), nil
+			}
 			// if a return exception is caught we want to return its value
 			return err.(*ReturnException).value, nil
 		}
 		return nil, err
 	}
 
+	if l.isInitializer {
+		return l.closure.getAt(0, "this"), nil
+	}
 	return nil, nil
 }
 

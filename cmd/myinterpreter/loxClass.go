@@ -32,5 +32,11 @@ func (l LoxClass) findMethod(name string) (*LoxFunction, bool) {
 		return &value, true
 	}
 
+	// if we don't find the method on the instance we recurse up the
+	// superclass chain and look there
+	if l.superclass != nil {
+		return l.superclass.findMethod(name)
+	}
+
 	return nil, false
 }

@@ -31,7 +31,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
-	err = defineAst(outputDir, "Stmt", "error", []string{
+	err = defineAst(outputDir, "Stmt", "(interface{}, error)", []string{
 		"Block : []Stmt statements",
 		"Class      : Token name, *Variable superclass, []Function methods",
 		"Expression : Expr expression",

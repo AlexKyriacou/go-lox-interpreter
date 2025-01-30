@@ -55,12 +55,14 @@ func main() {
 			os.Exit(70)
 		}
 	} else if command == "parse" {
-		expression, _ := parser.expression()
+		statements := parser.parse()
 		if hadError {
 			os.Exit(65)
 		}
 		astPrinter := AstPrinter{}
-		fmt.Println(astPrinter.print(expression))
+		for _, stmt := range statements {
+			fmt.Println(astPrinter.printStmt(stmt))
+		}
 	} else if command == "evaluate" {
 		expr, _ := parser.expression()
 		value, err := interpreter.evaluate(expr)

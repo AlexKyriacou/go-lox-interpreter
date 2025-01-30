@@ -87,17 +87,17 @@ func (r *Resolver) resolveLocal(expr Expr, name Token) {
 	}
 }
 
-func (r *Resolver) VisitExpressionStmt(stmt *Expression) error {
+func (r *Resolver) VisitExpressionStmt(stmt *Expression) (interface{}, error) {
 	r.resolveExpression(stmt.expression)
-	return nil
+	return nil, nil
 }
 
-func (r *Resolver) VisitFunctionStmt(stmt *Function) error {
+func (r *Resolver) VisitFunctionStmt(stmt *Function) (interface{}, error) {
 	r.declare(stmt.name)
 	r.define(stmt.name)
 
 	r.resolveFunction(stmt, FUNCTION_FUNCTION)
-	return nil
+	return nil, nil
 }
 
 func (r *Resolver) resolveFunction(function *Function, funcType FunctionType) {
@@ -114,21 +114,21 @@ func (r *Resolver) resolveFunction(function *Function, funcType FunctionType) {
 	r.currentFunction = enclosingFunction
 }
 
-func (r *Resolver) VisitIfStmt(stmt *If) error {
+func (r *Resolver) VisitIfStmt(stmt *If) (interface{}, error) {
 	r.resolveExpression(stmt.condition)
 	r.resolveStatement(stmt.thenBranch)
 	if stmt.elseBranch != nil {
 		r.resolveStatement(stmt.elseBranch)
 	}
-	return nil
+	return nil, nil
 }
 
-func (r *Resolver) VisitPrintStmt(stmt *Print) error {
+func (r *Resolver) VisitPrintStmt(stmt *Print) (interface{}, error) {
 	r.resolveExpression(stmt.expression)
-	return nil
+	return nil, nil
 }
 
-func (r *Resolver) VisitReturnStmt(stmt *Return) error {
+func (r *Resolver) VisitReturnStmt(stmt *Return) (interface{}, error) {
 	if r.currentFunction == FUNCTION_NONE {
 		r.error(stmt.keyword, "Can't return from top-level code.")
 	}
@@ -139,32 +139,32 @@ func (r *Resolver) VisitReturnStmt(stmt *Return) error {
 		}
 		r.resolveExpression(stmt.value)
 	}
-	return nil
+	return nil, nil
 }
 
-func (r *Resolver) VisitVarStmt(stmt *Var) error {
+func (r *Resolver) VisitVarStmt(stmt *Var) (interface{}, error) {
 	r.declare(stmt.name)
 	if stmt.initializer != nil {
 		r.resolveExpression(stmt.initializer)
 	}
 	r.define(stmt.name)
-	return nil
+	return nil, nil
 }
 
-func (r *Resolver) VisitWhileStmt(stmt *While) error {
+func (r *Resolver) VisitWhileStmt(stmt *While) (interface{}, error) {
 	r.resolveExpression(stmt.condition)
 	r.resolveStatement(stmt.body)
-	return nil
+	return nil, nil
 }
 
-func (r *Resolver) VisitBlockStmt(stmt *Block) error {
+func (r *Resolver) VisitBlockStmt(stmt *Block) (interface{}, error) {
 	r.beginScope()
 	r.resolveStatements(stmt.statements)
 	r.endScope()
-	return nil
+	return nil, nil
 }
 
-func (r *Resolver) VisitClassStmt(stmt *Class) error {
+func (r *Resolver) VisitClassStmt(stmt *Class) (interface{}, error) {
 	var enclosingClass ClassType = r.currentClass
 	r.currentClass = CLASS_CLASS
 	defer func() { r.currentClass = enclosingClass }()
@@ -210,7 +210,7 @@ func (r *Resolver) VisitClassStmt(stmt *Class) error {
 
 	r.endScope()
 
-	return nil
+	return nil, nil
 }
 
 func (r *Resolver) VisitAssignExpr(expr *Assign) (interface{}, error) {

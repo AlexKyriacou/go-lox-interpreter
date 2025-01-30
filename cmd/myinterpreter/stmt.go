@@ -1,26 +1,26 @@
 package main
 
 type Stmt interface {
-	Accept(visitor StmtVisitor) error
+	Accept(visitor StmtVisitor) (interface{}, error)
 }
 
 type StmtVisitor interface {
-	VisitBlockStmt(stmt *Block) error
-	VisitClassStmt(stmt *Class) error
-	VisitExpressionStmt(stmt *Expression) error
-	VisitFunctionStmt(stmt *Function) error
-	VisitIfStmt(stmt *If) error
-	VisitPrintStmt(stmt *Print) error
-	VisitReturnStmt(stmt *Return) error
-	VisitVarStmt(stmt *Var) error
-	VisitWhileStmt(stmt *While) error
+	VisitBlockStmt(stmt *Block) (interface{}, error)
+	VisitClassStmt(stmt *Class) (interface{}, error)
+	VisitExpressionStmt(stmt *Expression) (interface{}, error)
+	VisitFunctionStmt(stmt *Function) (interface{}, error)
+	VisitIfStmt(stmt *If) (interface{}, error)
+	VisitPrintStmt(stmt *Print) (interface{}, error)
+	VisitReturnStmt(stmt *Return) (interface{}, error)
+	VisitVarStmt(stmt *Var) (interface{}, error)
+	VisitWhileStmt(stmt *While) (interface{}, error)
 }
 
 type Block struct {
 	statements []Stmt
 }
 
-func (b *Block) Accept(visitor StmtVisitor) error {
+func (b *Block) Accept(visitor StmtVisitor) (interface{}, error) {
 	return visitor.VisitBlockStmt(b)
 }
 
@@ -30,7 +30,7 @@ type Class struct {
 	methods    []Function
 }
 
-func (c *Class) Accept(visitor StmtVisitor) error {
+func (c *Class) Accept(visitor StmtVisitor) (interface{}, error) {
 	return visitor.VisitClassStmt(c)
 }
 
@@ -38,7 +38,7 @@ type Expression struct {
 	expression Expr
 }
 
-func (e *Expression) Accept(visitor StmtVisitor) error {
+func (e *Expression) Accept(visitor StmtVisitor) (interface{}, error) {
 	return visitor.VisitExpressionStmt(e)
 }
 
@@ -48,7 +48,7 @@ type Function struct {
 	body   []Stmt
 }
 
-func (f *Function) Accept(visitor StmtVisitor) error {
+func (f *Function) Accept(visitor StmtVisitor) (interface{}, error) {
 	return visitor.VisitFunctionStmt(f)
 }
 
@@ -58,7 +58,7 @@ type If struct {
 	elseBranch Stmt
 }
 
-func (i *If) Accept(visitor StmtVisitor) error {
+func (i *If) Accept(visitor StmtVisitor) (interface{}, error) {
 	return visitor.VisitIfStmt(i)
 }
 
@@ -66,7 +66,7 @@ type Print struct {
 	expression Expr
 }
 
-func (p *Print) Accept(visitor StmtVisitor) error {
+func (p *Print) Accept(visitor StmtVisitor) (interface{}, error) {
 	return visitor.VisitPrintStmt(p)
 }
 
@@ -75,7 +75,7 @@ type Return struct {
 	value   Expr
 }
 
-func (r *Return) Accept(visitor StmtVisitor) error {
+func (r *Return) Accept(visitor StmtVisitor) (interface{}, error) {
 	return visitor.VisitReturnStmt(r)
 }
 
@@ -84,7 +84,7 @@ type Var struct {
 	initializer Expr
 }
 
-func (v *Var) Accept(visitor StmtVisitor) error {
+func (v *Var) Accept(visitor StmtVisitor) (interface{}, error) {
 	return visitor.VisitVarStmt(v)
 }
 
@@ -93,6 +93,6 @@ type While struct {
 	body      Stmt
 }
 
-func (w *While) Accept(visitor StmtVisitor) error {
+func (w *While) Accept(visitor StmtVisitor) (interface{}, error) {
 	return visitor.VisitWhileStmt(w)
 }

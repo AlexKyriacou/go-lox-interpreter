@@ -243,38 +243,38 @@ func (i *Interpreter) VisitGetExpr(expr *Get) (interface{}, error) {
 // VisitVarStmt will evaluate the variable statement
 // and define the variable in the current environment
 // if there is an initializer, it will evaluate the initializer
-func (i *Interpreter) VisitVarStmt(stmt *Var) error {
+func (i *Interpreter) VisitVarStmt(stmt *Var) (interface{}, error) {
 	var value interface{}
 	var err error
 	if stmt.initializer != nil {
 		value, err = i.evaluate(stmt.initializer)
 		if err != nil {
-			return err
+			return err, nil
 		}
 	}
 
 	i.environment.define(stmt.name.lexeme, value)
-	return nil
+	return nil, nil
 }
 
 // VisitWhileStmt will execute the while loop
 // executing the statement body until the condition is no longer true
-func (i *Interpreter) VisitWhileStmt(stmt *While) error {
+func (i *Interpreter) VisitWhileStmt(stmt *While) (interface{}, error) {
 	value, err := i.evaluate(stmt.condition)
 	if err != nil {
-		return err
+		return err, nil
 	}
 	for i.IsTruthy(value) {
 		err := i.execute(stmt.body)
 		if err != nil {
-			return err
+			return err, nil
 		}
 		value, err = i.evaluate(stmt.condition)
 		if err != nil {
-			return err
+			return err, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // VisitAssignExpr will evaluate the assignment expression
@@ -317,75 +317,75 @@ func (i *Interpreter) lookUpVariable(name Token, expr Expr) (interface{}, error)
 
 // VisitExpressionStmt will evaluate the expression statement
 // and return the value of the expression
-func (i *Interpreter) VisitExpressionStmt(stmt *Expression) error {
+func (i *Interpreter) VisitExpressionStmt(stmt *Expression) (interface{}, error) {
 	_, err := i.evaluate(stmt.expression)
-	return err
+	return err, nil
 }
 
 // VisitFunctionStmt will define the function in the current environment
-func (i *Interpreter) VisitFunctionStmt(stmt *Function) error {
+func (i *Interpreter) VisitFunctionStmt(stmt *Function) (interface{}, error) {
 	function := &LoxFunction{*stmt, i.environment, false}
 	i.environment.define(stmt.name.lexeme, function)
-	return nil
+	return nil, nil
 }
 
 // VisitIfStmt will evaluate the if statement
 // if the condition is truthy it will execute the then branch
 // if there is an else branch and the condition is falsey
 // it will execute the else branch
-func (i *Interpreter) VisitIfStmt(stmt *If) error {
+func (i *Interpreter) VisitIfStmt(stmt *If) (interface{}, error) {
 	condition, err := i.evaluate(stmt.condition)
 	if err != nil {
-		return err
+		return err, nil
 	}
 
 	if i.IsTruthy(condition) {
 		err = i.execute(stmt.thenBranch)
 		if err != nil {
-			return err
+			return err, nil
 		}
 	} else if stmt.elseBranch != nil {
 		err = i.execute(stmt.elseBranch)
 		if err != nil {
-			return err
+			return err, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // VisitPrintStmt will evaluate the print statement
 // and print the value of the expression
-func (i *Interpreter) VisitPrintStmt(stmt *Print) error {
+func (i *Interpreter) VisitPrintStmt(stmt *Print) (interface{}, error) {
 	value, err := i.evaluate(stmt.expression)
 	if err != nil {
-		return err
+		return err, nil
 	}
 	fmt.Println(i.stringify(value))
-	return nil
+	return nil, nil
 }
 
 // VisitReturnStatement will evaluate the return statement
 // and return the value of the expression as an error to be caught
 // by the most recent function call
-func (i *Interpreter) VisitReturnStmt(stmt *Return) error {
+func (i *Interpreter) VisitReturnStmt(stmt *Return) (interface{}, error) {
 	var value interface{}
 	var err error
 
 	if stmt.value != nil {
 		value, err = i.evaluate(stmt.value)
 		if err != nil {
-			return err
+			return err, nil
 		}
 	}
-	return &ReturnException{value}
+	return &ReturnException{value}, nil
 }
 
 // VisitBlockStmt will evaluate the block statement
-func (i *Interpreter) VisitBlockStmt(stmt *Block) error {
-	return i.executeBlock(stmt.statements, NewEnvironment(i.environment))
+func (i *Interpreter) VisitBlockStmt(stmt *Block) (interface{}, error) {
+	return i.executeBlock(stmt.statements, NewEnvironment(i.environment)), nil
 }
 
-func (i *Interpreter) VisitClassStmt(stmt *Class) error {
+func (i *Interpreter) VisitClassStmt(stmt *Class) (interface{}, error) {
 	// if the class has a superclass expression, we evaluate it.
 	// since that could potentially evaluate to some other kind of object,
 	// we have to check at runtime that the thing we want to be a superclass
@@ -394,11 +394,11 @@ func (i *Interpreter) VisitClassStmt(stmt *Class) error {
 	if stmt.superclass != nil {
 		superclassCandidate, err := i.evaluate(stmt.superclass)
 		if err != nil {
-			return err
+			return err, nil
 		}
 		superclassValue, ok := superclassCandidate.(LoxClass)
 		if !ok {
-			return &RuntimeError{stmt.superclass.name, "Superclass must be a class"}
+			return &RuntimeError{stmt.superclass.name, "Superclass must be a class"}, nil
 		}
 		superclass = &superclassValue
 	}
@@ -429,7 +429,7 @@ func (i *Interpreter) VisitClassStmt(stmt *Class) error {
 	}
 
 	i.environment.assign(stmt.name, class)
-	return nil
+	return nil, nil
 }
 
 // executeBlock will execute the block of statements
@@ -459,7 +459,8 @@ func (i *Interpreter) interpret(statements []Stmt) {
 }
 
 func (i *Interpreter) execute(statement Stmt) error {
-	return statement.Accept(i)
+	_, err := statement.Accept(i)
+	return err
 }
 
 func (i *Interpreter) resolve(expr Expr, depth int) {

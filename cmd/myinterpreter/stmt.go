@@ -25,8 +25,9 @@ func (b *Block) Accept(visitor StmtVisitor) error {
 }
 
 type Class struct {
-	name    Token
-	methods []Function
+	name       Token
+	superclass *Variable
+	methods    []Function
 }
 
 func (c *Class) Accept(visitor StmtVisitor) error {

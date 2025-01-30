@@ -366,6 +366,23 @@ func (i *Interpreter) VisitBlockStmt(stmt *Block) error {
 }
 
 func (i *Interpreter) VisitClassStmt(stmt *Class) error {
+	// if the class has a superclass expression, we evaluate it.
+	// since that could potentially evaluate to some other kind of object,
+	// we have to check at runtime that the thing we want to be a superclass
+	// is actually a class
+	var superclass interface{} = nil
+	var err error = nil
+	if stmt.superclass != nil {
+		superclass, err = i.evaluate(stmt.superclass)
+		if err != nil {
+			return err
+		}
+		if _, ok := superclass.(LoxClass); !ok {
+			return &RuntimeError{stmt.superclass.name, "Superclass must be a class"}
+		}
+
+	}
+
 	i.environment.define(stmt.name.lexeme, nil)
 
 	var methods map[string]LoxFunction = make(map[string]LoxFunction)
@@ -374,7 +391,8 @@ func (i *Interpreter) VisitClassStmt(stmt *Class) error {
 		methods[method.name.lexeme] = function
 	}
 
-	var class LoxClass = LoxClass{stmt.name.lexeme, methods}
+	var class LoxClass = LoxClass{stmt.name.lexeme, superclass.(LoxClass), methods}
+
 	i.environment.assign(stmt.name, class)
 	return nil
 }

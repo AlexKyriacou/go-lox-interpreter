@@ -171,6 +171,21 @@ func (r *Resolver) VisitClassStmt(stmt *Class) error {
 	r.declare(stmt.name)
 	r.define(stmt.name)
 
+	// prevent the case of self inheritance i.e.
+	// class Foo < Foo {}
+	if stmt.superclass != nil && stmt.name.lexeme == stmt.superclass.name.lexeme {
+		r.error(stmt.superclass.name, "A class can't inherit from itself.")
+	}
+
+	// traverse into and resolve the superclass subexpression.
+	// since classes are usually declared at the top level, this is unlikely
+	// to do anything useful however since Lox allows class declarations even
+	// inside blocks, its possible the superclass name refers to a local
+	// variable. In this case, we need to make sure its resolved
+	if stmt.superclass != nil {
+		r.resolveExpression(stmt.superclass)
+	}
+
 	r.beginScope()
 	r.scopes.Peek()["this"] = true
 

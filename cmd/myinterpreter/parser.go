@@ -47,6 +47,15 @@ func (p *Parser) classDeclaration() (Stmt, error) {
 		return nil, err
 	}
 
+	var superclass *Variable = nil
+	if p.match(LESS) {
+		_, err := p.consume(IDENTIFIER, "Expect superclass name.")
+		if err != nil {
+			return nil, err
+		}
+		superclass = &Variable{p.previous()}
+	}
+
 	_, err = p.consume(LEFT_BRACE, "Expect '{' before class body.")
 	if err != nil {
 		return nil, err
@@ -63,7 +72,7 @@ func (p *Parser) classDeclaration() (Stmt, error) {
 
 	p.consume(RIGHT_BRACE, "Expect '}' after class body.")
 
-	return &Class{name, methods}, nil
+	return &Class{name, superclass, methods}, nil
 }
 
 // function represents the function rule of the grammar

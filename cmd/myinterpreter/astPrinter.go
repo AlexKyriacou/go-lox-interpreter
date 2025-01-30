@@ -12,6 +12,10 @@ func (p *AstPrinter) VisitSetExpr(expr *Set) (interface{}, error) {
 	return p.parenthesize("set", expr.object, expr.name, expr.value)
 }
 
+func (p *AstPrinter) VisitSuperExpr(expr *Super) (interface{}, error) {
+	return p.parenthesize("super", expr.keyword, expr.method)
+}
+
 func (p *AstPrinter) VisitThisExpr(expr *This) (interface{}, error) {
 	return expr.keyword.lexeme, nil
 }

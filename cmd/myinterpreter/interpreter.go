@@ -75,6 +75,26 @@ func (i *Interpreter) VisitThisExpr(expr *This) (interface{}, error) {
 	return i.lookUpVariable(expr.keyword, expr)
 }
 
+func (i *Interpreter) VisitSuperExpr(expr *Super) (interface{}, error) {
+	// look up the surrounding class's superclass up by looking up super
+	// in the correct envionment
+	distance := i.locals[expr]
+	superclass := i.environment.getAt(distance, "super").(*LoxClass)
+
+	// retrieve the current instance of ("this") by looking it up in the environment.
+	// since "super" is stored one level higher in the environment chain,
+	// we offset the lookup by one to access "this" from the inner environment.
+	object := i.environment.getAt(distance-1, "this").(*LoxInstance)
+
+	// find the method on teh superclass
+	method, prs := superclass.findMethod(expr.method.lexeme)
+	if !prs {
+		return nil, &RuntimeError{expr.method, "Undefined property '" + expr.method.lexeme + "'."}
+	}
+
+	return method.bind(object), nil
+}
+
 // VisitGroupingExpr will evaluate the expression inside the grouping
 func (i *Interpreter) VisitGroupingExpr(expr *Grouping) (interface{}, error) {
 	return i.evaluate(expr.expression)
@@ -385,6 +405,15 @@ func (i *Interpreter) VisitClassStmt(stmt *Class) error {
 
 	i.environment.define(stmt.name.lexeme, nil)
 
+	// when we evaluate a subclass definition, we create a new envionment
+	// and store a reference to the superclass. Then when we later create the
+	// LoxFunctions for each method, those will capture the environent that
+	// defines 'super' as thier closure - thus holding on to the superclass -
+	if stmt.superclass != nil {
+		i.environment = NewEnvironment(i.environment)
+		i.environment.define("super", superclass)
+	}
+
 	var methods map[string]LoxFunction = make(map[string]LoxFunction)
 	for _, method := range stmt.methods {
 		function := LoxFunction{method, i.environment, method.name.lexeme == "init"}
@@ -392,6 +421,12 @@ func (i *Interpreter) VisitClassStmt(stmt *Class) error {
 	}
 
 	var class LoxClass = LoxClass{stmt.name.lexeme, superclass, methods}
+
+	// now that the methods have been created we pop the envionment defining
+	// the superclass
+	if superclass != nil {
+		i.environment = i.environment.enclosing
+	}
 
 	i.environment.assign(stmt.name, class)
 	return nil

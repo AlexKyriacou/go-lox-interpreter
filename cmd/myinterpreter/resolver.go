@@ -21,6 +21,7 @@ type ClassType int
 const (
 	CLASS_NONE ClassType = iota
 	CLASS_CLASS
+	CLASS_SUBCLASS
 )
 
 func NewResolver(interpreter *Interpreter) *Resolver {
@@ -183,7 +184,17 @@ func (r *Resolver) VisitClassStmt(stmt *Class) error {
 	// inside blocks, its possible the superclass name refers to a local
 	// variable. In this case, we need to make sure its resolved
 	if stmt.superclass != nil {
+		r.currentClass = CLASS_SUBCLASS
 		r.resolveExpression(stmt.superclass)
+	}
+
+	// if the class definition has a superclass, then we create a new scope
+	// surrounding all of its methods. In that scope, we define the name "super"
+	// Once we're done resolving the classes methods, we discard the scope
+	if stmt.superclass != nil {
+		r.beginScope()
+		r.scopes.Peek()["super"] = true
+		defer r.endScope()
 	}
 
 	r.beginScope()
@@ -245,6 +256,21 @@ func (r *Resolver) VisitLogicalExpr(expr *Logical) (interface{}, error) {
 func (r *Resolver) VisitSetExpr(expr *Set) (interface{}, error) {
 	r.resolveExpression(expr.value)
 	r.resolveExpression(expr.object)
+	return nil, nil
+}
+
+// the super token is resolved as if it was a variable. The resolution
+// stores the number of envionment 'hops' the interpreter needs to walk
+// to find the envionment where the superclass is stored
+func (r *Resolver) VisitSuperExpr(expr *Super) (interface{}, error) {
+	// check to see if currently inside of a subclass
+	if r.currentClass == CLASS_NONE {
+		r.error(expr.keyword, "Can't use 'super' outside of a class.")
+	} else if r.currentClass != CLASS_SUBCLASS {
+		r.error(expr.keyword, "Can't use 'super' in a class with no superclass.")
+	}
+
+	r.resolveLocal(expr, expr.keyword)
 	return nil, nil
 }
 

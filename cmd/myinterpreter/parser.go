@@ -572,7 +572,8 @@ func (p *Parser) finishCall(callee Expr) (Expr, error) {
 }
 
 // represents the primary rule of the grammar
-// primary -> NUMBER | STRING | "false" | "true" | "nil" | "(" expression ")"
+// primary     -> "true" | "false" | "nil" | "this"	| NUMBER | STRING |
+// IDENTIFIER | "(" expression ")" | "super" "." IDENTIFIER ;
 func (p *Parser) primary() (Expr, error) {
 	if p.match(FALSE) {
 		return &Literal{false}, nil
@@ -582,6 +583,17 @@ func (p *Parser) primary() (Expr, error) {
 		return &Literal{nil}, nil
 	} else if p.match(NUMBER, STRING) {
 		return &Literal{p.previous().literal}, nil
+	} else if p.match(SUPER) {
+		keyword := p.previous()
+		_, err := p.consume(DOT, "Expect '.' after 'super'.")
+		if err != nil {
+			return nil, err
+		}
+		method, err := p.consume(IDENTIFIER, "Expect superclass method name.")
+		if err != nil {
+			return nil, err
+		}
+		return &Super{keyword, method}, nil
 	} else if p.match(THIS) {
 		return &This{p.previous()}, nil
 	} else if p.match(IDENTIFIER) {

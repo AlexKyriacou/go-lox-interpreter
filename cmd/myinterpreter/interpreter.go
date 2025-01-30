@@ -370,17 +370,17 @@ func (i *Interpreter) VisitClassStmt(stmt *Class) error {
 	// since that could potentially evaluate to some other kind of object,
 	// we have to check at runtime that the thing we want to be a superclass
 	// is actually a class
-	var superclass interface{} = nil
-	var err error = nil
+	var superclass *LoxClass = nil
 	if stmt.superclass != nil {
-		superclass, err = i.evaluate(stmt.superclass)
+		superclassCandidate, err := i.evaluate(stmt.superclass)
 		if err != nil {
 			return err
 		}
-		if _, ok := superclass.(LoxClass); !ok {
+		superclassValue, ok := superclassCandidate.(LoxClass)
+		if !ok {
 			return &RuntimeError{stmt.superclass.name, "Superclass must be a class"}
 		}
-
+		superclass = &superclassValue
 	}
 
 	i.environment.define(stmt.name.lexeme, nil)
@@ -391,7 +391,7 @@ func (i *Interpreter) VisitClassStmt(stmt *Class) error {
 		methods[method.name.lexeme] = function
 	}
 
-	var class LoxClass = LoxClass{stmt.name.lexeme, superclass.(LoxClass), methods}
+	var class LoxClass = LoxClass{stmt.name.lexeme, superclass, methods}
 
 	i.environment.assign(stmt.name, class)
 	return nil

@@ -2,7 +2,7 @@ package main
 
 type LoxClass struct {
 	name       string
-	superclass LoxClass
+	superclass *LoxClass
 	methods    map[string]LoxFunction
 }
 
@@ -31,5 +31,6 @@ func (l LoxClass) findMethod(name string) (*LoxFunction, bool) {
 	if value, prs := l.methods[name]; prs {
 		return &value, true
 	}
+
 	return nil, false
 }

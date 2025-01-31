@@ -41,6 +41,7 @@ func (p *Parser) declaration() Stmt {
 	return stmt
 }
 
+// classDecl -> "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
 func (p *Parser) classDeclaration() (Stmt, error) {
 	name, err := p.consume(IDENTIFIER, "Expect class name.")
 	if err != nil {
@@ -144,7 +145,8 @@ func (p *Parser) varDeclaration() (Stmt, error) {
 }
 
 // represents the statment rule of the grammar
-// statement -> exprStmt | ifStmt | printStmt | while | block
+// statement -> exprStmt | forStmt | ifStmt | printStmt | returnStmt
+// | whileStmt | block ;
 func (p *Parser) statement() (Stmt, error) {
 	if p.match(FOR) {
 		return p.forStatement()
@@ -193,10 +195,8 @@ func (p *Parser) returnStatement() (Stmt, error) {
 }
 
 // represents the for statement rule of the grammar
-// forStmt -> "for" "(" ( varDecl | exprStmt | ";" )
-//
-//	expression? ";"
-//	expression? ")" statement ;
+// forStmt -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";"
+// expression? ")" statement ;
 func (p *Parser) forStatement() (Stmt, error) {
 	_, err := p.consume(LEFT_PAREN, "Expect '(' after 'for'.")
 	if err != nil {
@@ -289,8 +289,7 @@ func (p *Parser) whileStatement() (Stmt, error) {
 
 // represents the if statement rule of the grammar
 // ifStmt -> "if" "(" expression ")" statement
-//
-//	( "else" statement )? ;
+// ( "else" statement )? ;
 func (p *Parser) ifStatement() (Stmt, error) {
 	_, err := p.consume(LEFT_PAREN, "Expect '(' after 'if'.")
 	if err != nil {
@@ -319,7 +318,7 @@ func (p *Parser) ifStatement() (Stmt, error) {
 }
 
 // represents the block rule of the grammar
-// block -> "{" declaration* "{";
+// block -> "{" declaration* "}";
 func (p *Parser) block() ([]Stmt, error) {
 	var statements []Stmt
 	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
@@ -345,7 +344,7 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 }
 
 // represents the assignment rule of the grammar
-// assignment -> IDENTIFIER "=" assignment | logic_or ;
+// assignment -> ( call "." )? IDENTIFIER "=" assignment | logic_or ;
 func (p *Parser) assignment() (Expr, error) {
 	expr, err := p.or()
 	if err != nil {
@@ -370,6 +369,7 @@ func (p *Parser) assignment() (Expr, error) {
 	return expr, nil
 }
 
+// logic_or -> logic_and ( "or" logic_and )* ;
 func (p *Parser) or() (Expr, error) {
 	expr, err := p.and()
 	if err != nil {
@@ -387,6 +387,7 @@ func (p *Parser) or() (Expr, error) {
 	return expr, nil
 }
 
+// logic_and -> equality ( "and" equality )* ;
 func (p *Parser) and() (Expr, error) {
 	expr, err := p.equality()
 	if err != nil {

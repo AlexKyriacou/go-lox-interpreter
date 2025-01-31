@@ -47,7 +47,11 @@ go build
 
 ### Usage
 
-TODO
+To begin, run the program with the `-h` flag to see available options:
+
+```bash
+./lox -h
+```
 
 ## Language Examples
 

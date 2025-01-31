@@ -336,18 +336,18 @@ func (i *Interpreter) VisitFunctionStmt(stmt *Function) (interface{}, error) {
 func (i *Interpreter) VisitIfStmt(stmt *If) (interface{}, error) {
 	condition, err := i.evaluate(stmt.condition)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	if i.IsTruthy(condition) {
 		err = i.execute(stmt.thenBranch)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 	} else if stmt.elseBranch != nil {
 		err = i.execute(stmt.elseBranch)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 	}
 	return nil, nil
@@ -377,7 +377,7 @@ func (i *Interpreter) VisitReturnStmt(stmt *Return) (interface{}, error) {
 			return err, nil
 		}
 	}
-	return &ReturnException{value}, nil
+	return nil, &ReturnException{value}
 }
 
 // VisitBlockStmt will evaluate the block statement

@@ -289,8 +289,10 @@ func (r *Resolver) VisitUnaryExpr(expr *Unary) (interface{}, error) {
 }
 
 func (r *Resolver) VisitVariableExpr(expr *Variable) (interface{}, error) {
-	if !r.scopes.isEmpty() && !r.scopes.Peek()[expr.name.lexeme] {
-		report(expr.name.line, "", "Can't read local variable in its own initializer.")
+	if !r.scopes.isEmpty() {
+		if val, ok := r.scopes.Peek()[expr.name.lexeme]; ok && !val {
+			report(expr.name.line, "", "Can't read local variable in its own initializer.")
+		}
 	}
 	r.resolveLocal(expr, expr.name)
 	return nil, nil
